@@ -72,7 +72,7 @@ try {
         });
       });
       await page.goto(
-        `http://localhost:3000/events/${eventId}${managing ? '?manage=1' : ''}`,
+        `http://localhost:3000/org/events/${eventId}${managing ? '' : '/teams'}`,
       );
       await expect(
         page.getByRole('heading', {
@@ -136,7 +136,7 @@ try {
           ),
         });
         await main
-          .getByRole('button', { name: 'Jogadores', exact: true })
+          .getByRole('button', { name: 'Ver jogadores', exact: true })
           .first()
           .click();
         await expect(page.getByRole('dialog')).toBeVisible();
@@ -246,7 +246,9 @@ try {
         ),
       }),
     );
-    await page.goto(`http://localhost:3000/events/${eventId}`);
+    await page.goto(
+      `http://localhost:3000/${role === 'ADMIN' ? 'org/' : ''}events/${eventId}${role === 'ADMIN' ? '/teams' : ''}`,
+    );
     await expect(
       page.getByRole('article', { name: 'Time 1', exact: true }),
     ).toBeVisible();

@@ -107,7 +107,9 @@ export function TeamView({
               </>
             )}
           </div>
-          <div className={styles.actionRow}>
+          <div
+            className={`${styles.actionRow} ${!editable ? teamStyles.singleAction : ''}`}
+          >
             <Button
               className={`${styles.solid} ${styles.dark}`}
               disabled={busy}

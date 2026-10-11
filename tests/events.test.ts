@@ -38,6 +38,7 @@ const event = {
   confirmedCount: 11,
   ownPresence: 'CONFIRMED',
   ownAllocated: false,
+  ownParticipantId: null,
 };
 const detail = { event, teams: [] };
 function fixture() {
@@ -263,5 +264,51 @@ test('Concurrent protected mutations coordinate a fresh CSRF GET and POST as one
       '/auth/csrf',
       `/events/${id}/formation`,
     ],
+  );
+});
+
+import { safeReturn } from '../src/features/events/navigation';
+test('Navigation: validated internal returns preserve context and reject external or unknown targets', () => {
+  for (const value of [
+    'https://evil.invalid',
+    '//evil.invalid/events',
+    '/stats',
+    '/events?role=ORGANIZER',
+    '/org/events/invalid',
+    '/events#outside',
+    '/events?returnTo=%2Fstats',
+  ])
+    assert.equal(safeReturn(value, '/org/events'), '/org/events');
+  assert.equal(
+    safeReturn(
+      '/events?q=test&page=1&after=507f1f77bcf86cd799439011&slide=1&scroll=90',
+      '',
+    ),
+    '/events?q=test&page=1&after=507f1f77bcf86cd799439011&slide=1&scroll=90',
+  );
+  assert.equal(
+    safeReturn(
+      '/org/events/507f1f77bcf86cd799439011?returnTo=%2Forg%2Fevents%3Fq%3Dtest',
+      '',
+    ),
+    '/org/events/507f1f77bcf86cd799439011?returnTo=%2Forg%2Fevents%3Fq%3Dtest',
+  );
+});
+test('Own participant identity: optional legacy response, strict ID and session-owned serialized reference', () => {
+  assert.equal(
+    parseDetail({ event: { ...event, ownParticipantId: id }, teams: [] }).event
+      .ownParticipantId,
+    id,
+  );
+  assert.throws(() =>
+    parseDetail({
+      event: { ...event, ownParticipantId: 'invalid' },
+      teams: [],
+    }),
+  );
+  const { ownParticipantId: omitted, ...legacy } = event;
+  assert.equal(
+    parseDetail({ event: legacy, teams: [] }).event.ownParticipantId,
+    null,
   );
 });

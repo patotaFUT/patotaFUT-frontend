@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { EventsScreen } from '@/features/events/components/events-screen';
-export default async function EventPage({
+export default async function Page({
   params,
   searchParams,
 }: {
@@ -7,8 +9,10 @@ export default async function EventPage({
   searchParams: Promise<{ manage?: string }>;
 }) {
   const { eventId } = await params;
-  const query = await searchParams;
+  if ((await searchParams).manage === '1') redirect(`/org/events/${eventId}`);
   return (
-    <EventsScreen eventId={eventId} manageInitially={query.manage === '1'} />
+    <Suspense>
+      <EventsScreen eventId={eventId} />
+    </Suspense>
   );
 }

@@ -1,4 +1,4 @@
-﻿.card {
+.card {
   gap: var(--space-lg);
 }
 .card > h2 {
@@ -82,4 +82,10 @@
   .heading {
     flex-wrap: wrap;
   }
+}
+
+.singleAction {
+  grid-template-columns: minmax(0, 1fr);
+  width: calc((100% - var(--space-md)) / 2);
+  margin-inline: auto;
 }

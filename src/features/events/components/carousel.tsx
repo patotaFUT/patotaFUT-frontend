@@ -9,12 +9,19 @@ export function Carousel({
   children,
   count,
   label,
+  initialIndex = 0,
+  onActiveChange,
 }: {
   children: ReactNode;
   count: number;
   label: string;
+  initialIndex?: number;
+  onActiveChange?: (index: number) => void;
 }) {
   const track = useRef<HTMLDivElement>(null);
+  const change = useRef(onActiveChange);
+  const initial = useRef(initialIndex);
+  change.current = onActiveChange;
   const [active, setActive] = useState(0);
   const [atEnd, setAtEnd] = useState(count <= 1);
   const synchronize = useCallback(() => {
@@ -40,11 +47,16 @@ export function Carousel({
       }
     });
     setActive(nearest);
+    change.current?.(nearest);
     setAtEnd(node.scrollLeft + node.clientWidth >= node.scrollWidth - 2);
   }, []);
   useEffect(() => {
     const node = track.current;
     if (node === null) return;
+    const child = node.children.item(Math.min(count - 1, initial.current));
+    const first = node.firstElementChild;
+    if (child instanceof HTMLElement && first instanceof HTMLElement)
+      node.scrollLeft = child.offsetLeft - first.offsetLeft;
     synchronize();
     const observer = new ResizeObserver(synchronize);
     observer.observe(node);

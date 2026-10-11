@@ -45,6 +45,10 @@ export function ParticipantsView({
                   <button
                     type="button"
                     disabled={busy || p.allocated}
+                    aria-describedby={
+                      p.allocated ? 'allocated-participants-note' : undefined
+                    }
+                    title={p.allocated ? c.removeAllocated : undefined}
                     className={`${styles.iconButton} ${styles.removeButton}`}
                     aria-label={`Cancelar presença de ${p.name}`}
                     onClick={() => onRemove(p.id)}
@@ -55,6 +59,11 @@ export function ParticipantsView({
               </li>
             ))}
           </ul>
+          {page.items.some((p) => p.allocated) && (
+            <p id="allocated-participants-note" className={styles.hint}>
+              {c.removeAllocated}
+            </p>
+          )}
           {page.items.length === 0 && <p>Nenhuma presença confirmada.</p>}
           {page.nextCursor !== null && (
             <button
@@ -105,9 +114,6 @@ export function ParticipantsView({
           <p className={styles.hint}>
             Convidados participam deste evento sem criar uma conta.
           </p>
-          {page?.items.some((p) => p.allocated) && (
-            <p className={styles.hint}>{c.removeAllocated}</p>
-          )}
         </form>
       )}
     </>

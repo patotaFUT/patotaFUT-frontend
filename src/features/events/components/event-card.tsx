@@ -1,4 +1,4 @@
-﻿import Link from 'next/link';
+import Link from 'next/link';
 import { FiCalendar, FiClock } from 'react-icons/fi';
 import { FaUser } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,10 @@ export function EventCard({
   onPresence,
   onParticipants,
   onForm,
+  onOwnTeam,
+  teamsHref,
+  manageHref,
+  onNavigate,
 }: {
   event: EventDto;
   organizer: boolean;
@@ -23,6 +27,10 @@ export function EventCard({
   onPresence: () => void;
   onParticipants: () => void;
   onForm: () => void;
+  onOwnTeam?: (() => void) | undefined;
+  teamsHref: string;
+  manageHref: string;
+  onNavigate: (path: string) => void;
 }) {
   const presence = event.status === 'ACTIVE' && (
     <Button
@@ -59,14 +67,36 @@ export function EventCard({
             )}
             <Link
               className={`${styles.solid} ${styles.highlight}`}
-              href={`/events/${event.id}`}
+              href={teamsHref}
+              onClick={(click) => {
+                if (
+                  !click.ctrlKey &&
+                  !click.metaKey &&
+                  !click.shiftKey &&
+                  !click.altKey
+                ) {
+                  click.preventDefault();
+                  onNavigate(`/org/events/${event.id}/teams`);
+                }
+              }}
             >
               {c.teams}
             </Link>
             {organizer && (
               <Link
                 className={`${styles.solid} ${styles.warning}`}
-                href={`/events/${event.id}?manage=1`}
+                href={manageHref}
+                onClick={(click) => {
+                  if (
+                    !click.ctrlKey &&
+                    !click.metaKey &&
+                    !click.shiftKey &&
+                    !click.altKey
+                  ) {
+                    click.preventDefault();
+                    onNavigate(`/org/events/${event.id}`);
+                  }
+                }}
               >
                 Gerenciar
               </Link>
@@ -113,9 +143,34 @@ export function EventCard({
           </button>
           <div className={styles.actions}>
             {presence}
-            <Link className={styles.outline} href={`/events/${event.id}`}>
-              Ver time
-            </Link>
+            {onOwnTeam ? (
+              <button
+                type="button"
+                className={styles.outline}
+                disabled={busy}
+                onClick={onOwnTeam}
+              >
+                Ver time
+              </button>
+            ) : (
+              <Link
+                className={styles.outline}
+                href={teamsHref}
+                onClick={(click) => {
+                  if (
+                    !click.ctrlKey &&
+                    !click.metaKey &&
+                    !click.shiftKey &&
+                    !click.altKey
+                  ) {
+                    click.preventDefault();
+                    onNavigate(`/org/events/${event.id}/teams`);
+                  }
+                }}
+              >
+                Ver time
+              </Link>
+            )}
           </div>
           {event.status !== 'ACTIVE' && (
             <span className={styles.badge} data-status={event.status}>

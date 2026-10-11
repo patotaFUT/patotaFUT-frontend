@@ -11,6 +11,7 @@ export interface EventDto {
   confirmedCount: number;
   ownPresence: 'CONFIRMED' | 'CANCELED' | null;
   ownAllocated: boolean;
+  ownParticipantId: string | null;
 }
 export interface ParticipantDto {
   id: string;
@@ -94,6 +95,8 @@ export function parseEvent(value: unknown): EventDto {
     confirmedCount: number(value['confirmedCount']),
     ownPresence: presence,
     ownAllocated: boolean(value['ownAllocated']),
+    ownParticipantId:
+      value['ownParticipantId'] == null ? null : id(value['ownParticipantId']),
   };
 }
 export function parseParticipant(value: unknown): ParticipantDto {

@@ -32,8 +32,7 @@ export const eventContent = {
   missingTeams: 'O Organizador ainda não formou os times.',
   allocated:
     'Presença vinculada à formação. Procure o Organizador ou Administrador para alterações.',
-  removeAllocated:
-    'Este participante já está em um time ou nas reservas. Procure o Organizador para alterações.',
+  removeAllocated: 'Participantes alocados não podem ser excluídos.',
   conflict:
     'Os dados mudaram. A tela foi atualizada; revise sua ação antes de tentar novamente.',
   uncertain:
@@ -49,7 +48,15 @@ export const eventContent = {
   status: 'Status',
   edit: 'Editar',
   editingTeams: 'Edição de times',
-  players: 'Jogadores',
+  players: 'Ver jogadores',
+  ownTeam: 'Meu time',
+  notAllocated:
+    'Você ainda não está alocado em um time ou nas reservas neste evento.',
+  groupUnavailable:
+    'Não foi possível identificar seu grupo. Atualize os dados e tente novamente.',
+  you: 'Você',
+  comingSoon: 'Em breve',
+  forbidden: 'Você não tem permissão para acessar esta área.',
   add: 'Adicionar',
   pagination: 'Paginação dos eventos',
   previousPage: 'Página anterior de eventos',

@@ -1,7 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { safeReturn, withReturn } from '../navigation';
+import { OwnTeam, ownGroup } from './own-team';
 import {
   FiSearch,
   FiPlus,
@@ -37,21 +39,36 @@ type Dialog =
   | 'participants'
   | 'formation'
   | 'finish'
-  | 'remove';
+  | 'remove'
+  | 'ownTeam';
 export function EventsScreen({
   eventId,
-  manageInitially = false,
+  area = 'events',
+  view = 'teams',
 }: {
   eventId?: string;
-  manageInitially?: boolean;
+  area?: 'events' | 'organization';
+  view?: 'manage' | 'teams';
 }) {
   const auth = useAuth();
   const router = useRouter();
-  const [listManaging, setManaging] = useState(manageInitially);
-  const managing = eventId === undefined ? listManaging : manageInitially;
-  const [search, setSearch] = useState('');
-  const [querySearch, setQuerySearch] = useState('');
-  const [filter, setFilter] = useState<EventStatus | undefined>();
+  const params = useSearchParams();
+  const managing = area === 'organization';
+  const base = managing ? '/org/events' : '/events';
+  const [search, setSearch] = useState(params.get('q')?.slice(0, 200) ?? '');
+  const [querySearch, setQuerySearch] = useState(search);
+  const initialStatus = params.get('status');
+  const [filter, setFilter] = useState<EventStatus | undefined>(
+    initialStatus === 'ACTIVE' ||
+      initialStatus === 'CANCELED' ||
+      initialStatus === 'FINISHED'
+      ? initialStatus
+      : undefined,
+  );
+  const [ownDetail, setOwnDetail] = useState<EventDetail>();
+  const scrollPosition = useRef(0);
+  const [slide, setSlide] = useState(0);
+  const restored = useRef(false);
   const [pages, setPages] = useState<Page<EventDto>>({
     items: [],
     nextCursor: null,
@@ -75,13 +92,98 @@ export function EventsScreen({
     auth.session.status === 'authenticated' &&
     auth.session.user.role !== 'PLAYER';
   const authenticated = auth.session.status === 'authenticated';
+  const allowed =
+    !managing ||
+    (admin && (eventId === undefined || view !== 'manage' || organizer));
   const loadRevision = useRef(0);
+  function origin() {
+    const query = new URLSearchParams();
+    if (querySearch) query.set('q', querySearch);
+    if (filter && managing) query.set('status', filter);
+    cursors.slice(1, pageIndex + 1).forEach((cursor) => {
+      if (cursor) query.append('after', cursor);
+    });
+    query.set('page', String(pageIndex));
+    query.set('slide', String(slide));
+    query.set(
+      'scroll',
+      String(
+        (typeof document === 'undefined'
+          ? 0
+          : document.getElementById('events-main')?.scrollTop) ??
+          scrollPosition.current,
+      ),
+    );
+    return `${base}?${query}`;
+  }
+  useEffect(() => {
+    if (eventId !== undefined) return;
+    const after = params
+      .getAll('after')
+      .filter((value) => /^[a-f\d]{24}$/i.test(value));
+    const index = Math.min(
+      after.length,
+      Math.max(0, Math.floor(Number(params.get('page')) || 0)),
+    );
+    setCursors((old) =>
+      old.join() === [undefined, ...after].join() ? old : [undefined, ...after],
+    );
+    setPageIndex(index);
+    setSearch(params.get('q')?.slice(0, 200) ?? '');
+    setQuerySearch(params.get('q')?.slice(0, 200) ?? '');
+    const status = params.get('status');
+    setFilter(
+      status === 'ACTIVE' || status === 'CANCELED' || status === 'FINISHED'
+        ? status
+        : undefined,
+    );
+    setSlide(
+      Math.min(
+        1000000,
+        Math.max(0, Math.floor(Number(params.get('slide')) || 0)),
+      ),
+    );
+    scrollPosition.current = Math.max(0, Number(params.get('scroll')) || 0);
+    restored.current = false;
+  }, [params, eventId]);
+  useEffect(() => {
+    if (!loading && !restored.current && eventId === undefined) {
+      const main = document.getElementById('events-main');
+      if (main) main.scrollTop = scrollPosition.current;
+      restored.current = true;
+    }
+  }, [loading, eventId]);
+  function updateListing(
+    q: string,
+    status: EventStatus | undefined,
+    after: (string | undefined)[],
+    index: number,
+  ) {
+    const query = new URLSearchParams();
+    if (q) query.set('q', q);
+    if (status && managing) query.set('status', status);
+    after.slice(1, index + 1).forEach((cursor) => {
+      if (cursor) query.append('after', cursor);
+    });
+    query.set('page', String(index));
+    router.replace(`${base}?${query}`, { scroll: false });
+  }
   useEffect(() => {
     if (error !== undefined) document.getElementById('event-error')?.focus();
   }, [error]);
   useEffect(() => {
     if (auth.session.status === 'unauthenticated') router.replace('/');
   }, [auth.session.status, router]);
+  useEffect(() => {
+    if (authenticated && admin && !managing && eventId !== undefined) {
+      router.replace(
+        withReturn(
+          `/org/events/${eventId}/teams`,
+          safeReturn(params.get('returnTo'), '/org/events'),
+        ),
+      );
+    }
+  }, [authenticated, admin, managing, eventId, params, router]);
   const load = useCallback(async () => {
     const version = ++loadRevision.current;
     setLoading(true);
@@ -120,11 +222,11 @@ export function EventsScreen({
     auth.restore,
   ]);
   useEffect(() => {
-    if (authenticated) void load();
+    if (authenticated && allowed) void load();
     return () => {
       loadRevision.current++;
     };
-  }, [authenticated, load, reload]);
+  }, [authenticated, allowed, load, reload]);
   useEffect(() => {
     const visible = () => {
       if (document.visibilityState === 'visible' && !lock.current)
@@ -165,11 +267,17 @@ export function EventsScreen({
     setTarget(event ?? detail?.event);
     setDialog(kind);
     setParticipants(undefined);
-    if (kind === 'participants' && event !== undefined) {
+    setOwnDetail(undefined);
+    if (
+      (kind === 'participants' || kind === 'ownTeam') &&
+      event !== undefined
+    ) {
       setBusy(true);
       lock.current = true;
       try {
-        await participantsPage(event);
+        if (kind === 'ownTeam')
+          setOwnDetail(await eventsClient.detail(event.id));
+        else await participantsPage(event);
       } catch (caught: unknown) {
         setError(
           caught instanceof EventRequestError
@@ -251,7 +359,7 @@ export function EventsScreen({
   }
   const title =
     eventId !== undefined
-      ? managing
+      ? view === 'manage'
         ? c.manage
         : c.teams
       : managing
@@ -279,359 +387,438 @@ export function EventsScreen({
     <AppShell
       title={title}
       managing={managing}
-      onMode={
-        admin
-          ? (value) => {
-              if (eventId !== undefined) {
-                router.push(value ? `/events/${eventId}?manage=1` : '/events');
-                return;
-              }
-              setManaging(value);
-              setPageIndex(0);
-              setCursors([undefined]);
-            }
-          : undefined
-      }
+      organization={admin}
       onLogout={() => void auth.logout()}
       busy={busy || auth.operation !== 'idle'}
     >
       <div className={styles.content}>
-        {error !== undefined && dialog === undefined && (
-          <p
-            id="event-error"
-            tabIndex={-1}
-            className={`${styles.notice} ${styles.error}`}
-            role="alert"
-          >
-            {error}
-          </p>
-        )}
-        <button
-          type="button"
-          className={`${styles.iconButton} ${styles.refresh}`}
-          aria-label={c.retry}
-          title={c.retry}
-          disabled={busy || loading}
-          onClick={() => {
-            setError(undefined);
-            setReload((v) => v + 1);
-          }}
-        >
-          <FiRefreshCw aria-hidden="true" />
-        </button>
-        {eventId === undefined ? (
+        {!allowed ? (
+          <p role="status">{c.forbidden}</p>
+        ) : (
           <>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                setQuerySearch(search);
-                setPageIndex(0);
-                setCursors([undefined]);
-                setReload((v) => v + 1);
-              }}
-              className={styles.form}
-            >
-              <label className={styles.field}>
-                <span className="visually-hidden">
-                  Buscar eventos pelo nome
-                </span>
-                <span className={styles.fieldBox}>
-                  <input
-                    name="search"
-                    placeholder={c.search}
-                    maxLength={200}
-                    value={search}
-                    onChange={(event) => {
-                      setSearch(event.target.value);
-                    }}
-                  />
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    aria-label="Buscar eventos"
-                    className={styles.iconButton}
-                  >
-                    <FiSearch aria-hidden="true" />
-                  </button>
-                </span>
-              </label>
-            </form>
-            {managing && (
-              <label className={styles.field}>
-                <span className="visually-hidden">Estado do evento</span>
-                <span className={styles.fieldBox}>
-                  <select
-                    value={filter ?? ''}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setFilter(
-                        value === 'ACTIVE' ||
-                          value === 'CANCELED' ||
-                          value === 'FINISHED'
-                          ? value
-                          : undefined,
-                      );
-                      setPageIndex(0);
-                      setCursors([undefined]);
-                    }}
-                  >
-                    <option value="">Todos</option>
-                    <option value="ACTIVE">Ativos</option>
-                    <option value="CANCELED">Cancelados</option>
-                    <option value="FINISHED">Finalizados</option>
-                  </select>
-                </span>
-              </label>
-            )}
-            {organizer && managing && (
-              <Button
-                className={`${styles.solid} ${styles.dark} ${styles.centerAction}`}
-                disabled={busy}
-                onClick={() => void open('create')}
-              >
-                <FiPlus aria-hidden="true" />
-                {c.create}
-              </Button>
-            )}
-            {loading ? (
-              <p role="status">{c.loading}</p>
-            ) : pages.items.length === 0 ? (
-              <p>{c.empty}</p>
-            ) : (
-              <Carousel
-                key={`${pageIndex}-${querySearch}-${filter}-${managing}`}
-                count={pages.items.length}
-                label={title}
-              >
-                {pages.items.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    organizer={organizer}
-                    managing={managing}
-                    busy={busy}
-                    onParticipants={() => void open('participants', event)}
-                    onForm={() => void open('formation', event)}
-                    onPresence={() => {
-                      setTarget(event);
-                      void action(event, 'presence', {
-                        status:
-                          event.ownPresence === 'CONFIRMED'
-                            ? 'CANCELED'
-                            : 'CONFIRMED',
-                      });
-                    }}
-                  />
-                ))}
-              </Carousel>
-            )}
-            <nav className={styles.toolbar} aria-label={c.pagination}>
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label={c.previousPage}
-                disabled={busy || loading || pageIndex === 0}
-                onClick={() => setPageIndex((v) => v - 1)}
-              >
-                <FiChevronsLeft aria-hidden="true" />
-              </button>
-              <span aria-live="polite">Página {pageIndex + 1}</span>
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label={c.nextPage}
-                disabled={busy || loading || pages.nextCursor === null}
-                onClick={() => {
-                  const next = pages.nextCursor;
-                  if (next !== null) {
-                    setCursors((old) => [...old.slice(0, pageIndex + 1), next]);
-                    setPageIndex((v) => v + 1);
-                  }
-                }}
-              >
-                <FiChevronsRight aria-hidden="true" />
-              </button>
-            </nav>
-          </>
-        ) : loading && detail === undefined ? (
-          <p role="status">{c.loading}</p>
-        ) : detail !== undefined ? (
-          <>
-            {managing ? (
-              <>
-                <EventOverview
-                  event={detail.event}
-                  organizer={organizer}
-                  busy={busy}
-                  formed={detail.teams.length > 0}
-                  onParticipants={() => void open('participants', detail.event)}
-                  onPresence={() =>
-                    void action(detail.event, 'presence', {
-                      status:
-                        detail.event.ownPresence === 'CONFIRMED'
-                          ? 'CANCELED'
-                          : 'CONFIRMED',
-                    })
-                  }
-                  onEdit={() => void open('edit', detail.event)}
-                  onForm={() => void open('formation', detail.event)}
-                  onFinish={() => void open('finish', detail.event)}
-                  onCancel={() =>
-                    void action(detail.event, 'status', { status: 'CANCELED' })
-                  }
-                  onResume={() =>
-                    void action(detail.event, 'status', { status: 'ACTIVE' })
-                  }
-                />
-                <Link
-                  className={`${styles.outline} ${styles.backLink}`}
-                  href={`/events/${detail.event.id}`}
-                >
-                  {c.teams}
-                </Link>
-              </>
-            ) : (
-              <TeamView
-                key={`${detail.event.id}-${detail.event.revision}`}
-                teams={detail.teams}
-                editable={admin && detail.event.status === 'ACTIVE'}
-                busy={busy}
-                onSwap={(first, second) =>
-                  action(detail.event, 'teams/swap', {
-                    firstTeamId: first.teamId,
-                    secondTeamId: second.teamId,
-                    firstParticipantId: first.participantId,
-                    secondParticipantId: second.participantId,
-                  })
-                }
-              />
-            )}
-            <Link
-              className={`${styles.outline} ${styles.backLink}`}
-              href="/events"
-            >
-              {c.back}
-            </Link>
-          </>
-        ) : null}
-        {dialog !== undefined && (
-          <Modal
-            title={
-              dialog === 'create'
-                ? c.create
-                : dialog === 'edit'
-                  ? 'Editar evento'
-                  : dialog === 'participants'
-                    ? c.participants
-                    : dialog === 'formation'
-                      ? c.form
-                      : dialog === 'finish'
-                        ? 'Finalizar evento'
-                        : 'Cancelar presença'
-            }
-            busy={busy}
-            onClose={() => setDialog(undefined)}
-          >
-            {error !== undefined && (
+            {error !== undefined && dialog === undefined && (
               <p
                 id="event-error"
                 tabIndex={-1}
-                className={styles.error}
+                className={`${styles.notice} ${styles.error}`}
                 role="alert"
               >
                 {error}
               </p>
             )}
-            {dialog === 'create' && (
-              <EventForm
-                busy={busy}
-                onSave={(input) => run(() => eventsClient.create(input))}
-              />
-            )}
-            {dialog === 'edit' && selected !== undefined && (
-              <EventForm
-                initial={{
-                  name: selected.name,
-                  date: selected.date,
-                  startTime: selected.startTime,
-                  endTime: selected.endTime,
-                }}
-                busy={busy}
-                onSave={(input) =>
-                  run(() =>
-                    eventsClient.edit(selected.id, selected.revision, input),
-                  )
-                }
-              />
-            )}
-            {dialog === 'formation' && selected !== undefined && (
-              <FormationForm
-                count={selected.confirmedCount}
-                busy={busy}
-                onForm={(playersPerTeam) =>
-                  action(selected, 'formation', { playersPerTeam })
-                }
-              />
-            )}
-            {dialog === 'participants' && selected !== undefined && (
-              <ParticipantsView
-                page={participants}
-                organizer={organizer}
-                active={selected.status === 'ACTIVE'}
-                busy={busy}
-                onMore={() => {
-                  if (lock.current) return;
-                  lock.current = true;
-                  setBusy(true);
-                  void participantsPage(selected, true)
-                    .catch(() => setError(c.communication))
-                    .finally(() => {
-                      lock.current = false;
-                      setBusy(false);
-                    });
-                }}
-                onGuest={(name) => action(selected, 'guests', { name }, true)}
-                onRemove={(id) => {
-                  setRemoveId(id);
-                  setDialog('remove');
-                }}
-              />
-            )}
-            {dialog === 'finish' && selected !== undefined && (
+            <button
+              type="button"
+              className={`${styles.iconButton} ${styles.refresh}`}
+              aria-label={c.retry}
+              title={c.retry}
+              disabled={busy || loading}
+              onClick={() => {
+                setError(undefined);
+                setReload((v) => v + 1);
+              }}
+            >
+              <FiRefreshCw aria-hidden="true" />
+            </button>
+            {eventId === undefined ? (
               <>
-                <p>{c.finishConfirm}</p>
-                <p className={styles.hint}>{c.noStats}</p>
-                <Button
-                  className={`${styles.solid} ${styles.highlight} ${styles.centerAction}`}
-                  disabled={busy}
-                  onClick={() =>
-                    void action(selected, 'status', {
-                      status: 'FINISHED',
-                      confirmed: true,
-                    })
-                  }
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    updateListing(search, filter, [undefined], 0);
+                    setQuerySearch(search);
+                    setPageIndex(0);
+                    setCursors([undefined]);
+                    setReload((v) => v + 1);
+                  }}
+                  className={styles.form}
                 >
-                  Confirmar finalização
-                </Button>
-              </>
-            )}
-            {dialog === 'remove' &&
-              selected !== undefined &&
-              removeId !== undefined && (
-                <>
-                  <p>Cancelar a presença deste participante no evento?</p>
+                  <label className={styles.field}>
+                    <span className="visually-hidden">
+                      Buscar eventos pelo nome
+                    </span>
+                    <span className={styles.fieldBox}>
+                      <input
+                        name="search"
+                        placeholder={c.search}
+                        maxLength={200}
+                        value={search}
+                        onChange={(event) => {
+                          setSearch(event.target.value);
+                        }}
+                      />
+                      <button
+                        type="submit"
+                        disabled={busy}
+                        aria-label="Buscar eventos"
+                        className={styles.iconButton}
+                      >
+                        <FiSearch aria-hidden="true" />
+                      </button>
+                    </span>
+                  </label>
+                </form>
+                {managing && (
+                  <label className={styles.field}>
+                    <span className="visually-hidden">Estado do evento</span>
+                    <span className={styles.fieldBox}>
+                      <select
+                        value={filter ?? ''}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          updateListing(
+                            querySearch,
+                            value === 'ACTIVE' ||
+                              value === 'CANCELED' ||
+                              value === 'FINISHED'
+                              ? value
+                              : undefined,
+                            [undefined],
+                            0,
+                          );
+                          setFilter(
+                            value === 'ACTIVE' ||
+                              value === 'CANCELED' ||
+                              value === 'FINISHED'
+                              ? value
+                              : undefined,
+                          );
+                          setPageIndex(0);
+                          setCursors([undefined]);
+                        }}
+                      >
+                        <option value="">Todos</option>
+                        <option value="ACTIVE">Ativos</option>
+                        <option value="CANCELED">Cancelados</option>
+                        <option value="FINISHED">Finalizados</option>
+                      </select>
+                    </span>
+                  </label>
+                )}
+                {organizer && managing && (
                   <Button
+                    className={`${styles.solid} ${styles.dark} ${styles.centerAction}`}
                     disabled={busy}
-                    className={`${styles.solid} ${styles.danger}`}
+                    onClick={() => void open('create')}
+                  >
+                    <FiPlus aria-hidden="true" />
+                    {c.create}
+                  </Button>
+                )}
+                {loading ? (
+                  <p role="status">{c.loading}</p>
+                ) : pages.items.length === 0 ? (
+                  <p>{c.empty}</p>
+                ) : (
+                  <Carousel
+                    key={`${pageIndex}-${querySearch}-${filter}-${managing}`}
+                    count={pages.items.length}
+                    label={title}
+                    initialIndex={slide}
+                    onActiveChange={setSlide}
+                  >
+                    {pages.items.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        organizer={organizer}
+                        managing={managing}
+                        busy={busy}
+                        onNavigate={(path) => {
+                          const returnPath = origin();
+                          window.history.replaceState(
+                            window.history.state,
+                            '',
+                            returnPath,
+                          );
+                          router.push(withReturn(path, returnPath));
+                        }}
+                        teamsHref={withReturn(
+                          `/org/events/${event.id}/teams`,
+                          origin(),
+                        )}
+                        manageHref={withReturn(
+                          `/org/events/${event.id}`,
+                          origin(),
+                        )}
+                        onOwnTeam={
+                          !admin ? () => void open('ownTeam', event) : undefined
+                        }
+                        onParticipants={() => void open('participants', event)}
+                        onForm={() => void open('formation', event)}
+                        onPresence={() => {
+                          setTarget(event);
+                          void action(event, 'presence', {
+                            status:
+                              event.ownPresence === 'CONFIRMED'
+                                ? 'CANCELED'
+                                : 'CONFIRMED',
+                          });
+                        }}
+                      />
+                    ))}
+                  </Carousel>
+                )}
+                <nav className={styles.toolbar} aria-label={c.pagination}>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={c.previousPage}
+                    disabled={busy || loading || pageIndex === 0}
                     onClick={() =>
-                      void action(selected, `participants/${removeId}/cancel`)
+                      updateListing(querySearch, filter, cursors, pageIndex - 1)
                     }
                   >
-                    Confirmar cancelamento
-                  </Button>
-                </>
-              )}
-          </Modal>
+                    <FiChevronsLeft aria-hidden="true" />
+                  </button>
+                  <span aria-live="polite">Página {pageIndex + 1}</span>
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    aria-label={c.nextPage}
+                    disabled={busy || loading || pages.nextCursor === null}
+                    onClick={() => {
+                      const next = pages.nextCursor;
+                      if (next !== null) {
+                        updateListing(
+                          querySearch,
+                          filter,
+                          [...cursors.slice(0, pageIndex + 1), next],
+                          pageIndex + 1,
+                        );
+                        setCursors((old) => [
+                          ...old.slice(0, pageIndex + 1),
+                          next,
+                        ]);
+                        setPageIndex((v) => v + 1);
+                      }
+                    }}
+                  >
+                    <FiChevronsRight aria-hidden="true" />
+                  </button>
+                </nav>
+              </>
+            ) : loading && detail === undefined ? (
+              <p role="status">{c.loading}</p>
+            ) : detail !== undefined ? (
+              <>
+                {view === 'manage' ? (
+                  <>
+                    <EventOverview
+                      event={detail.event}
+                      organizer={organizer}
+                      busy={busy}
+                      formed={detail.teams.length > 0}
+                      onParticipants={() =>
+                        void open('participants', detail.event)
+                      }
+                      onPresence={() =>
+                        void action(detail.event, 'presence', {
+                          status:
+                            detail.event.ownPresence === 'CONFIRMED'
+                              ? 'CANCELED'
+                              : 'CONFIRMED',
+                        })
+                      }
+                      onEdit={() => void open('edit', detail.event)}
+                      onForm={() => void open('formation', detail.event)}
+                      onFinish={() => void open('finish', detail.event)}
+                      onCancel={() =>
+                        void action(detail.event, 'status', {
+                          status: 'CANCELED',
+                        })
+                      }
+                      onResume={() =>
+                        void action(detail.event, 'status', {
+                          status: 'ACTIVE',
+                        })
+                      }
+                    />
+                    <Link
+                      className={`${styles.outline} ${styles.backLink}`}
+                      href={withReturn(
+                        `/org/events/${detail.event.id}/teams`,
+                        withReturn(
+                          `/org/events/${detail.event.id}`,
+                          safeReturn(params.get('returnTo'), '/org/events'),
+                        ),
+                      )}
+                    >
+                      {c.teams}
+                    </Link>
+                  </>
+                ) : (
+                  <TeamView
+                    key={`${detail.event.id}-${detail.event.revision}`}
+                    teams={detail.teams}
+                    editable={
+                      managing && admin && detail.event.status === 'ACTIVE'
+                    }
+                    busy={busy}
+                    onSwap={(first, second) =>
+                      action(detail.event, 'teams/swap', {
+                        firstTeamId: first.teamId,
+                        secondTeamId: second.teamId,
+                        firstParticipantId: first.participantId,
+                        secondParticipantId: second.participantId,
+                      })
+                    }
+                  />
+                )}
+                <Link
+                  className={`${styles.outline} ${styles.backLink}`}
+                  href={safeReturn(
+                    params.get('returnTo'),
+                    managing
+                      ? view === 'teams' && organizer
+                        ? `/org/events/${eventId}`
+                        : '/org/events'
+                      : '/events',
+                  )}
+                >
+                  {c.back}
+                </Link>
+              </>
+            ) : null}
+            {dialog !== undefined && (
+              <Modal
+                title={
+                  dialog === 'ownTeam'
+                    ? ownGroup(ownDetail)?.type === 'RESERVES'
+                      ? 'Reservas'
+                      : (ownGroup(ownDetail)?.name ?? c.ownTeam)
+                    : dialog === 'create'
+                      ? c.create
+                      : dialog === 'edit'
+                        ? 'Editar evento'
+                        : dialog === 'participants'
+                          ? c.participants
+                          : dialog === 'formation'
+                            ? c.form
+                            : dialog === 'finish'
+                              ? 'Finalizar evento'
+                              : 'Cancelar presença'
+                }
+                busy={busy}
+                onClose={() => {
+                  setDialog(undefined);
+                  setError(undefined);
+                  setParticipants(undefined);
+                  setOwnDetail(undefined);
+                }}
+              >
+                {error !== undefined && (
+                  <p
+                    id="event-error"
+                    tabIndex={-1}
+                    className={styles.error}
+                    role="alert"
+                  >
+                    {error}
+                  </p>
+                )}
+                {dialog === 'ownTeam' && <OwnTeam detail={ownDetail} />}
+                {dialog === 'create' && (
+                  <EventForm
+                    busy={busy}
+                    onSave={(input) => run(() => eventsClient.create(input))}
+                  />
+                )}
+                {dialog === 'edit' && selected !== undefined && (
+                  <EventForm
+                    initial={{
+                      name: selected.name,
+                      date: selected.date,
+                      startTime: selected.startTime,
+                      endTime: selected.endTime,
+                    }}
+                    busy={busy}
+                    onSave={(input) =>
+                      run(() =>
+                        eventsClient.edit(
+                          selected.id,
+                          selected.revision,
+                          input,
+                        ),
+                      )
+                    }
+                  />
+                )}
+                {dialog === 'formation' && selected !== undefined && (
+                  <FormationForm
+                    count={selected.confirmedCount}
+                    busy={busy}
+                    onForm={(playersPerTeam) =>
+                      action(selected, 'formation', { playersPerTeam })
+                    }
+                  />
+                )}
+                {dialog === 'participants' && selected !== undefined && (
+                  <ParticipantsView
+                    page={participants}
+                    organizer={organizer}
+                    active={selected.status === 'ACTIVE'}
+                    busy={busy}
+                    onMore={() => {
+                      if (lock.current) return;
+                      lock.current = true;
+                      setBusy(true);
+                      void participantsPage(selected, true)
+                        .catch(() => setError(c.communication))
+                        .finally(() => {
+                          lock.current = false;
+                          setBusy(false);
+                        });
+                    }}
+                    onGuest={(name) =>
+                      action(selected, 'guests', { name }, true)
+                    }
+                    onRemove={(id) => {
+                      setError(undefined);
+                      setRemoveId(id);
+                      setDialog('remove');
+                    }}
+                  />
+                )}
+                {dialog === 'finish' && selected !== undefined && (
+                  <>
+                    <p>{c.finishConfirm}</p>
+                    <p className={styles.hint}>{c.noStats}</p>
+                    <Button
+                      className={`${styles.solid} ${styles.highlight} ${styles.centerAction}`}
+                      disabled={busy}
+                      onClick={() =>
+                        void action(selected, 'status', {
+                          status: 'FINISHED',
+                          confirmed: true,
+                        })
+                      }
+                    >
+                      Confirmar finalização
+                    </Button>
+                  </>
+                )}
+                {dialog === 'remove' &&
+                  selected !== undefined &&
+                  removeId !== undefined && (
+                    <>
+                      <p>Cancelar a presença deste participante no evento?</p>
+                      <Button
+                        disabled={busy}
+                        className={`${styles.solid} ${styles.danger}`}
+                        onClick={() =>
+                          void action(
+                            selected,
+                            `participants/${removeId}/cancel`,
+                          )
+                        }
+                      >
+                        Confirmar cancelamento
+                      </Button>
+                    </>
+                  )}
+              </Modal>
+            )}
+          </>
         )}
       </div>
     </AppShell>

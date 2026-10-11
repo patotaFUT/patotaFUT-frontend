@@ -60,7 +60,7 @@ try {
         .waitFor();
       if (managing)
         await page
-          .getByRole('button', { name: 'Gerenciar', exact: true })
+          .getByRole('link', { name: 'Gerenciar', exact: true })
           .click();
       const suffix = `${viewport.width}x${viewport.height}-${managing ? 'events' : 'active'}`;
       await page

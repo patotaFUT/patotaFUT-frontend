@@ -10,14 +10,16 @@ export function AppShell({
   children,
   title,
   managing,
-  onMode,
+  organization,
   onLogout,
   busy,
+  section,
 }: {
   children: ReactNode;
   title: string;
   managing: boolean;
-  onMode?: ((value: boolean) => void) | undefined;
+  organization?: boolean;
+  section?: string;
   onLogout: () => void;
   busy: boolean;
 }) {
@@ -51,34 +53,26 @@ export function AppShell({
         {children}
       </main>
       <nav className={styles.menu} aria-label="Menu principal">
-        <button
-          type="button"
-          disabled
-          aria-label={c.statisticsUnavailable}
-          title={c.statisticsUnavailable}
+        <Link
+          href="/stats"
+          aria-current={section === 'stats' ? 'page' : undefined}
         >
           <FiBarChart2 aria-hidden="true" />
           <span>{c.statistics}</span>
-        </button>
+        </Link>
         <Link
           href="/events"
           aria-label="Eventos ativos"
-          aria-current={!managing ? 'page' : undefined}
-          onClick={() => onMode?.(false)}
+          aria-current={!managing && section !== 'stats' ? 'page' : undefined}
         >
           <HiHome aria-hidden="true" />
           <span>Eventos</span>
         </Link>
-        {onMode !== undefined && (
-          <button
-            type="button"
-            disabled={busy}
-            aria-pressed={managing}
-            onClick={() => onMode(true)}
-          >
+        {organization && (
+          <Link href="/org/events" aria-current={managing ? 'page' : undefined}>
             <HiViewGridAdd aria-hidden="true" />
             <span>Gerenciar</span>
-          </button>
+          </Link>
         )}
       </nav>
     </div>
