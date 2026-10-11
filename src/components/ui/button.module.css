@@ -1,0 +1,18 @@
+.primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-md) var(--space-lg);
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-primary-strong);
+  color: var(--color-surface);
+  font-weight: var(--weight-semibold);
+  box-shadow: var(--shadow-none);
+}
+.primary:hover:not(:disabled) {
+  background: var(--color-primary);
+}

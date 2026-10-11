@@ -1,0 +1,70 @@
+.authSeparator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  color: var(--color-secondary);
+  margin: var(--separator-gap) var(--space-lg)
+    var(--auth-separator-bottom, var(--space-lg));
+}
+.authSeparator::before,
+.authSeparator::after {
+  content: '';
+  flex: 1;
+  height: var(--border-width);
+  background: var(--color-border);
+}
+.notice {
+  margin-bottom: var(--space-base);
+  text-align: center;
+  font-size: var(--font-small);
+  color: var(--color-secondary);
+}
+.noticeError {
+  color: var(--color-error);
+}
+.notice .textButton {
+  margin-top: var(--space-sm);
+  min-height: var(--touch-target);
+}
+.sessionPanel {
+  display: grid;
+  gap: var(--space-md);
+  text-align: center;
+}
+.sessionConfirmation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  color: var(--color-primary);
+  font-size: var(--font-small);
+}
+.sessionConfirmation svg {
+  flex-shrink: 0;
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+.sessionName {
+  font-size: var(--font-heading);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+}
+.sessionEmail {
+  overflow-wrap: anywhere;
+}
+.sessionRole {
+  color: var(--color-secondary);
+  font-size: var(--font-small);
+}
+.logoutButton {
+  margin-top: var(--space-lg);
+}
+
+.textButton {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--color-information);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xs);
+}

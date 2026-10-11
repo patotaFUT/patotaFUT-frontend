@@ -1,0 +1,31 @@
+.navigation {
+  text-align: center;
+  font-size: var(--auth-navigation-size, var(--font-small));
+  margin-bottom: var(--auth-navigation-margin, var(--space-base));
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+}
+.forgotReference {
+  text-align: center;
+  font-size: var(--auth-navigation-size, var(--font-small));
+  margin-bottom: var(--auth-forgot-margin, var(--space-sm));
+}
+.loginForm .loginSubmit {
+  font-size: var(--login-reference-action-text);
+  font-weight: var(--weight-regular);
+  line-height: var(--line-heading);
+  padding-block: var(--space-sm);
+}
+
+.link {
+  color: var(--color-information);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xs);
+}
+.link:focus-visible {
+  outline: var(--focus-width) solid var(--color-primary);
+  outline-offset: var(--focus-offset);
+}

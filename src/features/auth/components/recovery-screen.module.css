@@ -1,0 +1,56 @@
+.description {
+  color: var(--color-secondary);
+  font-size: var(--font-small);
+  line-height: var(--line-body);
+  text-align: center;
+  margin-bottom: var(--space-lg);
+}
+.error {
+  color: var(--color-error);
+  font-size: var(--font-small);
+  text-align: center;
+  margin-bottom: var(--space-base);
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: grid;
+  gap: var(--space-md);
+  margin-top: var(--space-base);
+}
+.link,
+.secondary {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-height: var(--touch-target);
+  text-align: center;
+  color: var(--color-information);
+  text-decoration: underline;
+  text-underline-offset: var(--space-xs);
+}
+.secondary {
+  border: 0;
+  background: transparent;
+  font: inherit;
+  padding: var(--space-sm);
+}
+.secondary:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: wait;
+}
+.link:focus-visible,
+.secondary:focus-visible {
+  outline: var(--focus-width) solid var(--color-primary);
+  outline-offset: var(--space-xs);
+}
+.success {
+  display: grid;
+  gap: var(--space-base);
+  text-align: center;
+}
+.success svg {
+  margin-inline: auto;
+  color: var(--color-primary);
+  width: var(--icon-size);
+  height: var(--icon-size);
+}

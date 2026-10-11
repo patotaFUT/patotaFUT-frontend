@@ -1,0 +1,32 @@
+{
+  "name": "patotafut-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "tsc --noEmit",
+    "lint": "node scripts/lint.mjs && prettier --check .",
+    "format": "prettier --write .",
+    "test": "tsc -p tsconfig.test.json && node .test-build/tests/auth.test.js && node .test-build/tests/events.test.js"
+  },
+  "dependencies": {
+    "axios": "1.15.1",
+    "next": "16.2.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-icons": "5.6.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0",
+    "@types/node": "22.14.0",
+    "@types/react": "18.3.28",
+    "@types/react-dom": "18.3.7",
+    "prettier": "3.5.3",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.17.0"
+  }
+}

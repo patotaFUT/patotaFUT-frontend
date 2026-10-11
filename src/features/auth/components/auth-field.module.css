@@ -1,0 +1,83 @@
+.fieldGroup {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-sm);
+}
+.inputShell {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  min-height: var(--control-height);
+  border: var(--border-width) solid var(--color-border);
+  outline: 0;
+  box-shadow: none;
+  border-radius: var(--radius-input);
+  padding-left: var(--space-lg);
+  background: var(--color-surface);
+}
+.inputShell:focus-within {
+  background: var(--color-input-focus-background);
+}
+.fieldIcon {
+  color: var(--color-secondary);
+  width: var(--auth-icon-size, var(--icon-size));
+  height: var(--auth-icon-size, var(--icon-size));
+  stroke-width: var(--auth-icon-stroke, 2px);
+  flex-shrink: 0;
+  margin-right: var(--auth-icon-gap, var(--space-base));
+}
+.inputShell input {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--auth-input-height, var(--control-height));
+  padding: var(--auth-input-padding, var(--space-md)) var(--space-md)
+    var(--auth-input-padding, var(--space-md)) 0;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: var(--color-text);
+}
+.inputShell input:focus {
+  background: transparent;
+}
+.inputShell input::placeholder {
+  color: var(--color-secondary);
+  opacity: 1;
+}
+.passwordToggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--touch-target);
+  min-height: var(--touch-target);
+  margin-right: var(--space-xs);
+  margin-block: var(--auth-toggle-margin, 0px);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-button);
+  background: transparent;
+  color: var(--color-secondary);
+}
+.passwordToggle svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+.passwordToggle:focus-visible {
+  outline: 0;
+  box-shadow: none;
+  background: var(--color-surface);
+}
+.fieldError {
+  color: var(--color-error);
+  overflow-wrap: anywhere;
+  font-size: var(--font-small);
+  padding-inline: var(--space-base);
+}
+
+.hint {
+  color: var(--color-secondary);
+  font-size: var(--font-caption);
+  font-weight: var(--weight-medium);
+  padding-inline: var(--space-base);
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,98 @@
+.loginPage {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-padding-block: var(--space-lg);
+  padding-block: calc(var(--screen-padding) + env(safe-area-inset-top, 0px))
+    calc(var(--screen-padding) + env(safe-area-inset-bottom, 0px));
+  padding-inline: max(var(--page-gutter), env(safe-area-inset-left, 0px))
+    max(var(--page-gutter), env(safe-area-inset-right, 0px));
+}
+.loginPage:focus-visible {
+  outline: var(--focus-width) solid var(--color-primary);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+.loginContent {
+  width: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  margin-block: auto;
+  overflow-wrap: anywhere;
+  max-width: var(--login-max-width);
+}
+.loginHeading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--heading-gap);
+  margin-bottom: var(--space-lg);
+}
+.brandLogo {
+  width: var(--logo-width);
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: var(--logo-ratio);
+  object-fit: contain;
+}
+.loginHeading h1 {
+  font-size: var(--font-title);
+  font-weight: var(--weight-bold);
+  line-height: var(--line-heading);
+}
+.loginReference {
+  --login-max-width: var(--login-reference-width);
+  --page-gutter: var(--login-reference-gutter);
+  --logo-width: var(--login-reference-logo-width);
+  --heading-gap: var(--login-reference-heading-gap);
+  --control-height: var(--login-reference-control-height);
+  --auth-input-height: calc(var(--control-height) - 2 * var(--border-width));
+  --auth-input-padding: var(--space-sm);
+  --auth-toggle-margin: calc(-1 * var(--border-width));
+  --auth-icon-size: var(--login-reference-icon-size);
+  --auth-icon-stroke: 1px;
+  --auth-icon-gap: var(--space-base);
+  --auth-heading-margin: 18px;
+  --auth-navigation-size: var(--font-body);
+  --auth-navigation-margin: 14px;
+  --auth-forgot-margin: 0px;
+  --separator-gap: 28px;
+  --auth-separator-bottom: 18px;
+  --auth-action-size: var(--login-reference-action-text);
+  padding-top: calc(var(--login-reference-top) + env(safe-area-inset-top, 0px));
+}
+.loginReference .loginContent {
+  margin-block: 0;
+}
+.loginReference .loginHeading {
+  margin-bottom: var(--auth-heading-margin);
+}
+.loginReference .loginHeading h1 {
+  font-size: var(--login-reference-title);
+  font-weight: var(--weight-regular);
+}
+/* Height breakpoints are implementation decisions. */
+@media (max-height: 740px) {
+  .loginPage {
+    --screen-padding: var(--space-lg);
+    --heading-gap: var(--space-lg);
+    --logo-width: var(--logo-width-compact);
+    --separator-gap: var(--space-lg);
+  }
+  .loginReference {
+    padding-top: calc(var(--space-lg) + env(safe-area-inset-top, 0px));
+  }
+}
+@media (max-height: 600px) {
+  .loginPage {
+    --screen-padding: var(--space-base);
+    --heading-gap: var(--space-base);
+    --logo-width: var(--logo-width-short);
+    --separator-gap: var(--space-base);
+  }
+}

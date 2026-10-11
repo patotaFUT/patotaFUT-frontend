@@ -1,0 +1,99 @@
+/* Tables on PDF pages 2–7. Layout-only additions are named below. */
+:root {
+  --color-primary: #14532d;
+  --color-primary-strong: #166534;
+  --color-highlight: #22c55e;
+  --color-background: #f8fafc;
+  --color-surface: #ffffff;
+  --color-text: #172018;
+  --color-secondary: #647067;
+  --color-success: #16a34a;
+  --color-warning: #eab308;
+  --color-error: #dc2626;
+  --color-information: #2563eb;
+  --color-google-background: #000000;
+  --color-google-text: #ffffff;
+  --color-border: var(--color-secondary);
+  --color-input-focus-background: #f1f5f9;
+  --font-family: 'Inter', system-ui, sans-serif;
+  --font-title: 28px;
+  --font-heading: 20px;
+  --font-subheading: 18px;
+  --font-body: 16px;
+  --font-small: 14px;
+  --font-caption: 12px;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-base: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-xxl: 40px;
+  --space-xxxl: 48px;
+  --radius-button: 26px;
+  --radius-input: 32px;
+  --radius-card: 12px;
+  --radius-badge: 8px;
+  --radius-modal: 16px;
+  --radius-section: 32px;
+  --radius-avatar: 50%;
+  --content-mobile: 358px;
+  --content-desktop: 1200px;
+  --control-height: 48px;
+  --touch-target: 44px;
+  --shadow-none: none;
+  /* Diffuse elevations visible on the event screens, PDF pages 9 and 16–25. */
+  --shadow-card: 0 8px 20px rgb(23 32 24 / 16%);
+  --shadow-navigation: 0 4px 16px rgb(23 32 24 / 18%);
+  --shadow-navigation-active: 0 4px 18px rgb(23 32 24 / 20%);
+  --shadow-modal: 0 12px 32px rgb(23 32 24 / 20%);
+  --color-slide-inactive: #dedede;
+  --color-modal-backdrop: rgb(0 0 0 / 40%);
+  --event-card-width: 320px;
+  --navigation-width: 184px;
+  --navigation-icon-size: 32px;
+  --navigation-mobile-height: 80px;
+  --event-logo-width: 54px;
+  --event-logo-width-compact: 36px;
+  --slide-dot-size: 10px;
+  /* Proportional login layout and accessibility additions, not new PDF rules. */
+  --login-max-width: var(--content-mobile);
+  /* Login drawing on PDF page 8 takes precedence over page 3's title table.
+     These values are scoped to login; other headings retain the shared scale. */
+  --login-reference-width: 366px;
+  --login-reference-gutter: 12px;
+  --login-reference-top: 50px;
+  --login-reference-logo-width: 140px;
+  --login-reference-heading-gap: 44px;
+  --login-reference-title: 37px;
+  --login-reference-action-text: 21px;
+  --login-reference-control-height: 44px;
+  --login-reference-icon-size: 28px;
+  --logo-width: 136px;
+  --logo-width-compact: 100px;
+  --logo-width-short: 72px;
+  --page-gutter: var(--space-base);
+  --screen-padding: var(--space-xxxl);
+  --heading-gap: var(--space-xxl);
+  --separator-gap: var(--space-xl);
+  --logo-ratio: 174 / 217;
+  --line-body: 1.5;
+  --line-heading: 1.2;
+  --border-width: 1px;
+  --focus-width: 2px;
+  --focus-offset: 4px;
+  --icon-size: 22px;
+  --google-logo-size: 32px;
+  --opacity-disabled: 0.65;
+}
+
+/* 768px is an implementation breakpoint; CSS variables cannot drive @media. */
+@media (min-width: 768px) {
+  :root {
+    --page-gutter: var(--space-xl);
+  }
+}
