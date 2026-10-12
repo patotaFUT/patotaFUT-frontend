@@ -2,18 +2,22 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { formationError } from '../events.validation';
+import { eventContent as c } from '../events.content';
 import styles from './events.module.css';
 export function FormationForm({
   count,
   busy,
   onForm,
+  formed = false,
 }: {
   count: number;
   busy: boolean;
   onForm: (size: number) => Promise<boolean>;
+  formed?: boolean;
 }) {
   const [size, setSize] = useState('');
   const [error, setError] = useState<string>();
+  const [confirmed, setConfirmed] = useState(false);
   return (
     <form
       className={`${styles.form} ${styles.formationForm}`}
@@ -22,7 +26,8 @@ export function FormationForm({
         const number = Number(size);
         const invalid = formationError(number, count);
         setError(invalid);
-        if (invalid === undefined && !busy) void onForm(number);
+        if (invalid === undefined && !busy && (!formed || confirmed))
+          void onForm(number);
       }}
     >
       <p>{count} participantes confirmados</p>
@@ -61,10 +66,21 @@ export function FormationForm({
       <Button
         type="submit"
         className={`${styles.solid} ${styles.dark} ${styles.centerAction}`}
-        disabled={busy}
+        disabled={busy || (formed && !confirmed)}
       >
         {busy ? 'Formando...' : 'Sortear'}
       </Button>
+      {formed && (
+        <label>
+          <input
+            type="checkbox"
+            checked={confirmed}
+            disabled={busy}
+            onChange={(event) => setConfirmed(event.target.checked)}
+          />{' '}
+          {c.redrawConfirm}
+        </label>
+      )}
     </form>
   );
 }

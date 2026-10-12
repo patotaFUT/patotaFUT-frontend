@@ -11,7 +11,7 @@ export const viewport: Viewport = {
   interactiveWidget: 'resizes-content',
 };
 export const metadata: Metadata = {
-  title: authContent.metadataTitle,
+  title: { default: 'PatotaFUT', template: '%s | PatotaFUT' },
   description: authContent.metadataDescription,
   icons: { icon: brandPresentation.logoPath },
 };

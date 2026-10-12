@@ -180,6 +180,16 @@ export function EventCard({
         </>
       )}
       {event.ownAllocated && <p className={styles.hint}>{c.allocated}</p>}
+      {event.formationExists && (
+        <p className={styles.hint}>
+          {c.waiting}: {event.waitingCount}
+        </p>
+      )}
+      {event.formationExists &&
+        !event.ownAllocated &&
+        event.ownPresence === 'CONFIRMED' && (
+          <p className={styles.hint}>{c.ownWaiting}</p>
+        )}
       {event.status === 'FINISHED' && (
         <p className={styles.hint}>{c.noStats}</p>
       )}

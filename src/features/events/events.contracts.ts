@@ -9,6 +9,9 @@ export interface EventDto {
   status: EventStatus;
   revision: number;
   confirmedCount: number;
+  waitingCount: number;
+  playersPerTeam: number | null;
+  formationExists: boolean;
   ownPresence: 'CONFIRMED' | 'CANCELED' | null;
   ownAllocated: boolean;
   ownParticipantId: string | null;
@@ -18,6 +21,7 @@ export interface ParticipantDto {
   name: string;
   participantType: 'USER' | 'GUEST';
   allocated: boolean;
+  allocation?: 'CONFIRMED' | 'WAITING' | 'TEAM' | 'RESERVES';
 }
 export interface TeamDto {
   id: string;
@@ -28,6 +32,7 @@ export interface TeamDto {
 export interface EventDetail {
   event: EventDto;
   teams: TeamDto[];
+  waitingParticipants: ParticipantDto[];
 }
 export interface Page<T> {
   items: T[];
@@ -93,6 +98,16 @@ export function parseEvent(value: unknown): EventDto {
     status,
     revision: number(value['revision']),
     confirmedCount: number(value['confirmedCount']),
+    waitingCount:
+      value['waitingCount'] === undefined ? 0 : number(value['waitingCount']),
+    formationExists:
+      value['formationExists'] === undefined
+        ? value['playersPerTeam'] != null
+        : boolean(value['formationExists']),
+    playersPerTeam:
+      value['playersPerTeam'] == null
+        ? null
+        : number(value['playersPerTeam']) || bad(),
     ownPresence: presence,
     ownAllocated: boolean(value['ownAllocated']),
     ownParticipantId:
@@ -102,12 +117,22 @@ export function parseEvent(value: unknown): EventDto {
 export function parseParticipant(value: unknown): ParticipantDto {
   if (!record(value)) return bad();
   const type = value['participantType'];
+  const allocation = value['allocation'];
+  if (
+    allocation !== undefined &&
+    allocation !== 'CONFIRMED' &&
+    allocation !== 'WAITING' &&
+    allocation !== 'TEAM' &&
+    allocation !== 'RESERVES'
+  )
+    return bad();
   if (type !== 'USER' && type !== 'GUEST') return bad();
   return {
     id: id(value['id']),
     name: text(value['name']),
     participantType: type,
     allocated: boolean(value['allocated']),
+    ...(allocation === undefined ? {} : { allocation }),
   };
 }
 export function parseTeam(value: unknown): TeamDto {
@@ -125,7 +150,14 @@ export function parseTeam(value: unknown): TeamDto {
 export function parseDetail(value: unknown): EventDetail {
   if (!record(value) || !Array.isArray(value['teams'])) return bad();
   const teams: unknown[] = value['teams'];
-  return { event: parseEvent(value['event']), teams: teams.map(parseTeam) };
+  const waiting = value['waitingParticipants'];
+  if (waiting !== undefined && !Array.isArray(waiting)) return bad();
+  const items: unknown[] = waiting === undefined ? [] : waiting;
+  return {
+    event: parseEvent(value['event']),
+    teams: teams.map(parseTeam),
+    waitingParticipants: items.map(parseParticipant),
+  };
 }
 function page<T>(value: unknown, parse: (item: unknown) => T): Page<T> {
   if (!record(value) || !Array.isArray(value['items'])) return bad();

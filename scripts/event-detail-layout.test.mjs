@@ -151,7 +151,9 @@ try {
           .first()
           .click();
         await expect(
-          main.getByRole('heading', { name: 'Edição de times', exact: true }),
+          page
+            .getByRole('heading', { name: 'Editar times', exact: true })
+            .first(),
         ).toBeVisible();
         await expect(
           main.getByRole('article', { name: 'Reservas', exact: true }),

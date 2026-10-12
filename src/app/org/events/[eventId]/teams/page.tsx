@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { EventsScreen } from '@/features/events/components/events-screen';
 export default async function Page({
@@ -12,3 +13,5 @@ export default async function Page({
     </Suspense>
   );
 }
+
+export const metadata: Metadata = { title: 'Times do evento' };

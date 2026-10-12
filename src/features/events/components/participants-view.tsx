@@ -39,7 +39,15 @@ export function ParticipantsView({
                 <span>
                   {p.name}
                   {p.participantType === 'GUEST' ? ' (Convidado)' : ''}
-                  {p.allocated ? ' · Alocado' : ''}
+                  {p.allocation === 'WAITING'
+                    ? ` · ${c.waiting}`
+                    : p.allocation === 'RESERVES'
+                      ? ` · ${c.reserves}`
+                      : p.allocation === 'TEAM'
+                        ? ` · ${c.inTeam}`
+                        : p.allocated
+                          ? ' · Alocado'
+                          : ` · ${c.confirmedLabel}`}
                 </span>
                 {organizer && active && (
                   <button

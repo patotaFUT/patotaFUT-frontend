@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import Link from 'next/link';
 import { FaUsers } from 'react-icons/fa';
 import { Modal } from '@/features/events/components/modal';
 import teamStyles from './team-view.module.css';
@@ -18,16 +19,31 @@ export function TeamView({
   editable,
   busy,
   onSwap,
+  editing = false,
+  onEdit,
+  waitingParticipants = [],
+  capacity,
+  onAllocate,
+  backHref,
 }: {
   teams: TeamDto[];
   editable: boolean;
   busy: boolean;
   onSwap: (first: SwapSelection, second: SwapSelection) => Promise<boolean>;
+  editing?: boolean;
+  onEdit: () => void;
+  waitingParticipants?: import('@/features/events/events.contracts').ParticipantDto[];
+  capacity?: number | null;
+  onAllocate: (participantId: string, teamId: string) => Promise<boolean>;
+  backHref: string;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [success, setSuccess] = useState<string>();
+  const [waitingId, setWaitingId] = useState('');
+  const [destination, setDestination] = useState('');
   const [viewing, setViewing] = useState<TeamDto>();
   const [selected, setSelected] = useState<SwapSelection[]>([]);
   function choose(teamId: string, participantId: string) {
+    setSuccess(undefined);
     setSelected((items) =>
       items.some((item) => item.participantId === participantId)
         ? items.filter((item) => item.participantId !== participantId)
@@ -62,7 +78,7 @@ export function TeamView({
                 aria-pressed={selected.some(
                   (s) => s.participantId === member.id,
                 )}
-                disabled={busy}
+                disabled={busy || !editable}
                 onClick={() => choose(team.id, member.id)}
               >
                 {selected.some((s) => s.participantId === member.id)
@@ -122,8 +138,7 @@ export function TeamView({
                 className={`${styles.solid} ${styles.warning}`}
                 disabled={busy}
                 onClick={() => {
-                  setEditing(true);
-                  setSelected([]);
+                  onEdit();
                 }}
               >
                 {c.edit}
@@ -135,14 +150,16 @@ export function TeamView({
     </article>
   ));
   return (
-    <section className={styles.section} aria-label={c.teams}>
+    <section
+      className={styles.section}
+      aria-label={editing ? c.editingTeams : c.teams}
+    >
       {teams.length === 0 ? (
         <p className={styles.emptyTeams}>{c.missingTeams}</p>
       ) : (
         <>
           {editing && (
             <div className={teamStyles.editHeading}>
-              <h2>{c.editingTeams}</h2>
               <p>{c.swap}</p>
             </div>
           )}
@@ -155,24 +172,26 @@ export function TeamView({
           )}
           {editing && (
             <div className={styles.actionRow}>
-              <button
-                type="button"
+              <Link
+                href={backHref}
                 className={styles.outline}
-                disabled={busy}
-                onClick={() => {
-                  setEditing(false);
-                  setSelected([]);
+                aria-disabled={busy}
+                onClick={(event) => {
+                  if (busy) event.preventDefault();
                 }}
               >
                 {c.back}
-              </button>
+              </Link>
               <Button
                 className={`${styles.solid} ${styles.dark}`}
-                disabled={busy || !valid}
+                disabled={busy || !editable || !valid}
                 onClick={() => {
                   if (first !== undefined && second !== undefined && valid)
                     void onSwap(first, second).then((ok) => {
-                      if (ok) setSelected([]);
+                      if (ok) {
+                        setSelected([]);
+                        setSuccess(c.swapSuccess);
+                      }
                     });
                 }}
               >
@@ -181,6 +200,82 @@ export function TeamView({
             </div>
           )}
         </>
+      )}
+      {success && (
+        <p role="status" className={styles.hint}>
+          {success}
+        </p>
+      )}
+      {editing && editable && waitingParticipants.length > 0 && (
+        <form
+          className={styles.form}
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && waitingId && destination)
+              void onAllocate(waitingId, destination).then((ok) => {
+                if (ok) {
+                  setWaitingId('');
+                  setDestination('');
+                  setSuccess(c.allocatedSuccess);
+                }
+              });
+          }}
+        >
+          <h2>
+            {c.waiting}: {waitingParticipants.length}
+          </h2>
+          <label className={styles.field}>
+            {c.participant}
+            <span className={styles.fieldBox}>
+              <select
+                value={waitingId}
+                disabled={busy}
+                onChange={(e) => setWaitingId(e.target.value)}
+                required
+              >
+                <option value="">{c.choose}</option>
+                {waitingParticipants.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.participantType === 'GUEST' ? ' (Convidado)' : ''}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </label>
+          <label className={styles.field}>
+            {c.teamWithVacancy}
+            <span className={styles.fieldBox}>
+              <select
+                value={destination}
+                disabled={busy}
+                onChange={(e) => setDestination(e.target.value)}
+                required
+              >
+                <option value="">{c.choose}</option>
+                {teams
+                  .filter(
+                    (team) =>
+                      team.type === 'TEAM' &&
+                      capacity != null &&
+                      team.members.length < capacity,
+                  )
+                  .map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+              </select>
+            </span>
+          </label>
+          <Button
+            className={`${styles.solid} ${styles.dark}`}
+            type="submit"
+            disabled={busy || !waitingId || !destination}
+          >
+            {c.allocate}
+          </Button>
+        </form>
       )}
       {viewing !== undefined && (
         <Modal

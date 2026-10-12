@@ -36,11 +36,14 @@ const event = {
   status: 'ACTIVE',
   revision: 1,
   confirmedCount: 11,
+  waitingCount: 0,
+  playersPerTeam: null,
+  formationExists: false,
   ownPresence: 'CONFIRMED',
   ownAllocated: false,
   ownParticipantId: null,
 };
-const detail = { event, teams: [] };
+const detail = { event, teams: [], waitingParticipants: [] };
 function fixture() {
   let tail: Promise<void> = Promise.resolve();
   let csrf = '';

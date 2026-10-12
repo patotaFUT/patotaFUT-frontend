@@ -14,7 +14,14 @@ export function OwnTeam({ detail }: { detail: EventDetail | undefined }) {
   const group = ownGroup(detail);
   if (!group)
     return (
-      <p>{detail.event.ownAllocated ? c.groupUnavailable : c.notAllocated}</p>
+      <p>
+        {detail.event.ownAllocated
+          ? c.groupUnavailable
+          : detail.event.formationExists &&
+              detail.event.ownPresence === 'CONFIRMED'
+            ? c.waiting
+            : c.notAllocated}
+      </p>
     );
   return (
     <ul className={styles.participantList}>

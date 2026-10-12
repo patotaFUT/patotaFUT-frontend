@@ -15,7 +15,7 @@ export function safeReturn(
   if (
     url.origin !== 'http://internal.invalid' ||
     url.hash ||
-    !/^\/(?:events(?:\/[a-f\d]{24})?|org\/events(?:\/[a-f\d]{24}(?:\/teams)?)?)$/.test(
+    !/^\/(?:events(?:\/[a-f\d]{24})?|org\/events(?:\/[a-f\d]{24}(?:\/teams(?:\/edit)?)?)?)$/.test(
       url.pathname,
     )
   )
@@ -25,7 +25,9 @@ export function safeReturn(
   if (nested !== null) {
     if (
       depth >= 2 ||
-      !/^\/org\/events\/[a-f\d]{24}(?:\/teams)?$/.test(url.pathname) ||
+      !/^\/org\/events\/[a-f\d]{24}(?:\/teams(?:\/edit)?)?$/.test(
+        url.pathname,
+      ) ||
       safeReturn(nested, '', depth + 1) === ''
     )
       return fallback;

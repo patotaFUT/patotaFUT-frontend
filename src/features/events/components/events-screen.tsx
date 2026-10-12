@@ -48,7 +48,7 @@ export function EventsScreen({
 }: {
   eventId?: string;
   area?: 'events' | 'organization';
-  view?: 'manage' | 'teams';
+  view?: 'manage' | 'teams' | 'editTeams';
 }) {
   const auth = useAuth();
   const router = useRouter();
@@ -85,6 +85,7 @@ export function EventsScreen({
   const lock = useRef(false);
   const [error, setError] = useState<string>();
   const [reload, setReload] = useState(0);
+  const [success, setSuccess] = useState<string>();
   const organizer =
     auth.session.status === 'authenticated' &&
     auth.session.user.role === 'ORGANIZER';
@@ -299,6 +300,9 @@ export function EventsScreen({
     lock.current = true;
     setBusy(true);
     setError(undefined);
+    setSuccess(undefined);
+    const main = document.getElementById('events-main');
+    const previousScroll = main?.scrollTop ?? 0;
     try {
       const result = await operation();
       if (eventId !== undefined) setDetail(result);
@@ -311,7 +315,10 @@ export function EventsScreen({
       }));
       if (keepDialog) await participantsPage(result.event);
       else setDialog(undefined);
-      setReload((v) => v + 1);
+      if (eventId === undefined) setReload((v) => v + 1);
+      requestAnimationFrame(() => {
+        if (main) main.scrollTop = previousScroll;
+      });
       return true;
     } catch (caught: unknown) {
       setError(
@@ -359,11 +366,13 @@ export function EventsScreen({
   }
   const title =
     eventId !== undefined
-      ? view === 'manage'
-        ? c.manage
-        : c.teams
+      ? view === 'editTeams'
+        ? c.editingTeams
+        : view === 'manage'
+          ? c.manage
+          : c.teams
       : managing
-        ? c.title
+        ? c.organization
         : c.activeTitle;
   if (!authenticated)
     return (
@@ -396,6 +405,11 @@ export function EventsScreen({
           <p role="status">{c.forbidden}</p>
         ) : (
           <>
+            {success && (
+              <p className={styles.hint} role="status">
+                {success}
+              </p>
+            )}
             {error !== undefined && dialog === undefined && (
               <p
                 id="event-error"
@@ -648,7 +662,28 @@ export function EventsScreen({
                   </>
                 ) : (
                   <TeamView
-                    key={`${detail.event.id}-${detail.event.revision}`}
+                    key={detail.event.id}
+                    backHref={withReturn(
+                      `/org/events/${detail.event.id}/teams`,
+                      safeReturn(params.get('returnTo'), '/org/events'),
+                    )}
+                    editing={view === 'editTeams'}
+                    onEdit={() =>
+                      router.push(
+                        withReturn(
+                          `/org/events/${detail.event.id}/teams/edit`,
+                          safeReturn(params.get('returnTo'), '/org/events'),
+                        ),
+                      )
+                    }
+                    waitingParticipants={detail.waitingParticipants}
+                    capacity={detail.event.playersPerTeam}
+                    onAllocate={(participantId, teamId) =>
+                      action(detail.event, 'teams/allocate', {
+                        participantId,
+                        teamId,
+                      })
+                    }
                     teams={detail.teams}
                     editable={
                       managing && admin && detail.event.status === 'ACTIVE'
@@ -664,19 +699,46 @@ export function EventsScreen({
                     }
                   />
                 )}
-                <Link
-                  className={`${styles.outline} ${styles.backLink}`}
-                  href={safeReturn(
-                    params.get('returnTo'),
-                    managing
-                      ? view === 'teams' && organizer
-                        ? `/org/events/${eventId}`
-                        : '/org/events'
-                      : '/events',
+                {detail.event.status === 'ACTIVE' &&
+                  detail.teams.length > 0 &&
+                  view !== 'editTeams' && (
+                    <div className={styles.section}>
+                      <p>
+                        {c.waiting}: {detail.event.waitingCount}
+                      </p>
+                      {organizer && (
+                        <Button
+                          className={`${styles.solid} ${styles.dark} ${styles.centerAction}`}
+                          disabled={busy}
+                          onClick={() =>
+                            void action(detail.event, 'teams/incorporate').then(
+                              (ok) => {
+                                if (ok) setSuccess(c.incorporateSuccess);
+                              },
+                            )
+                          }
+                        >
+                          {c.incorporate}
+                        </Button>
+                      )}
+                      <p className={styles.hint}>{c.futureMatches}</p>
+                    </div>
                   )}
-                >
-                  {c.back}
-                </Link>
+                {view !== 'editTeams' && (
+                  <Link
+                    className={`${styles.outline} ${styles.backLink}`}
+                    href={safeReturn(
+                      params.get('returnTo'),
+                      managing
+                        ? view === 'teams' && organizer
+                          ? `/org/events/${eventId}`
+                          : '/org/events'
+                        : '/events',
+                    )}
+                  >
+                    {c.back}
+                  </Link>
+                )}
               </>
             ) : null}
             {dialog !== undefined && (
@@ -746,9 +808,15 @@ export function EventsScreen({
                 {dialog === 'formation' && selected !== undefined && (
                   <FormationForm
                     count={selected.confirmedCount}
+                    formed={selected.formationExists}
                     busy={busy}
                     onForm={(playersPerTeam) =>
-                      action(selected, 'formation', { playersPerTeam })
+                      action(selected, 'formation', {
+                        playersPerTeam,
+                        ...(selected.formationExists
+                          ? { confirmed: true }
+                          : {}),
+                      })
                     }
                   />
                 )}
