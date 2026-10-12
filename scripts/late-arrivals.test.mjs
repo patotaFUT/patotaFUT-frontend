@@ -42,8 +42,9 @@ try {
     let swaps = 0;
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.route('http://localhost:8080/**', async (route) => {
+    await page.route('http://localhost:3000/api/**', async (route) => {
       const url = new URL(route.request().url());
+      url.pathname = url.pathname.replace(/^\/api(?=\/)/, '');
       const path = url.pathname;
       const method = route.request().method();
       const headers = {
@@ -398,7 +399,7 @@ try {
   }
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.route('http://localhost:8080/**', (route) =>
+  await page.route('http://localhost:3000/api/**', (route) =>
     route.fulfill({
       status: 401,
       contentType: 'application/json',

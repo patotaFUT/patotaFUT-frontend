@@ -42,8 +42,11 @@ try {
     for (const managing of [false, true]) {
       const context = await browser.newContext({ viewport });
       const page = await context.newPage();
-      await page.route('http://localhost:8080/**', async (route) => {
-        const path = new URL(route.request().url()).pathname;
+      await page.route('http://localhost:3000/api/**', async (route) => {
+        const path = new URL(route.request().url()).pathname.replace(
+          /^\/api(?=\/)/,
+          '',
+        );
         const body =
           path === '/auth/me'
             ? {
@@ -230,7 +233,7 @@ try {
       viewport: { width: 390, height: 844 },
     });
     const page = await context.newPage();
-    await page.route('http://localhost:8080/**', async (route) =>
+    await page.route('http://localhost:3000/api/**', async (route) =>
       route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify(

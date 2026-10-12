@@ -120,7 +120,7 @@ function recoveryFixture() {
     validateStatus: () => true,
   });
   return {
-    auth: new AuthClient(http, coordinator, 'http://localhost:8080'),
+    auth: new AuthClient(http, coordinator, '/api'),
     requests,
     notices,
     state,
@@ -389,7 +389,7 @@ function fixture() {
     };
   }
   function tab(): AuthClient {
-    return new AuthClient(client, coordinator(), 'http://localhost:8080');
+    return new AuthClient(client, coordinator(), '/api');
   }
   return { tab, state, requests, notices };
 }

@@ -75,7 +75,7 @@ export const authContent = Object.freeze({
     'Não foi possível conectar à API. Verifique sua conexão e tente novamente.',
   serverUnavailable: 'A API está indisponível. Tente novamente em instantes.',
   invalidResponse: 'A API retornou uma resposta inesperada. Tente novamente.',
-  configuration: 'Configure NEXT_PUBLIC_API_URL com a URL da API para acessar.',
+  configuration: 'O serviço está indisponível. Tente novamente em instantes.',
   browserUnsupported:
     'Este navegador não oferece a coordenação segura entre abas. Use um navegador atualizado em HTTPS ou localhost.',
   generic: 'Não foi possível concluir a operação. Tente novamente.',

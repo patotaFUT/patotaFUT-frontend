@@ -44,8 +44,9 @@ try {
       let allocated = true;
       let rejectParticipants = false;
       let mutations = 0;
-      await page.route('http://localhost:8080/**', async (route) => {
+      await page.route('http://localhost:3000/api/**', async (route) => {
         const url = new URL(route.request().url());
+        url.pathname = url.pathname.replace(/^\/api(?=\/)/, '');
         let status = 200;
         let body;
         if (url.pathname === '/auth/me')

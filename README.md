@@ -1,11 +1,12 @@
 # PatotaFUT — frontend
 
-O frontend contém **login, cadastro local e recuperação de senha**, com suas integrações.
+O frontend contém **login, cadastro local, recuperação de senha, eventos e times**, com suas integrações.
 Login fica em `/` e “Registre-se” em `/register`, com navegação entre as duas telas.
 O cadastro é uma extensão autorizada, derivada visualmente do login; não faz parte
 do PDF original. Recuperação fica em `/forgot-password` e também é uma extensão
-autorizada derivada do login. Vinculação e demais telas continuam fora do escopo.
-Após autenticação, a confirmação e o usuário aparecem na própria tela.
+autorizada derivada do login. Vinculação de contas continua fora do escopo.
+Após autenticação, o usuário segue para `/events`. A Organização usa `/org/events`,
+com gerenciamento de eventos e times em suas subrotas. `/stats` permanece em breve.
 
 ## Executar
 
@@ -23,7 +24,7 @@ npm run dev
 ```
 
 Se `.env.local` já existir, preserve-o em vez de executar a cópia. Nesta entrega
-foi criado um arquivo local ignorado pelo Git, com a URL pública da API e o Client
+foi criado um arquivo local ignorado pelo Git, com a URL da API exclusiva do servidor e o Client
 ID público já configurado nela. Não contém segredos do backend.
 
 Abra **http://localhost:3000**. A API deve rodar separadamente em
@@ -53,9 +54,9 @@ Os testes usam tsc + node:test, sem subprocessos de transformação do tsx.
 
 ## Ambiente, cookies e origem
 
-| Variável pública               | Valor local                                                                     |
+| Variável                       | Valor local                                                                     |
 | ------------------------------ | ------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_API_URL`          | `http://localhost:8080`                                                         |
+| `API_URL`                      | `http://localhost:8080`; exclusiva do servidor Next.js                          |
 | `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | OAuth Web Client ID igual ao `GOOGLE_CLIENT_ID` da API; vazio desabilita Google |
 
 Variáveis NEXT_PUBLIC são incorporadas no build e são visíveis no navegador.
@@ -83,14 +84,62 @@ a API. Isso difere da configuração atual em 8080; as notas posteriores do mesm
 documento registram a mudança. Os livros originais não foram alterados.
 
 Produção exige URLs HTTPS, origens explícitas e cookies Secure definidos pelo
-backend. Frontend/API em sites distintos exigem SameSite=None com Secure, e
-políticas de bloqueio de cookies de terceiros podem limitar essa topologia.
-Este frontend não define Domain, cookies de autenticação ou proxies. A futura
-topologia de produção continua aberta.
+backend. O navegador acessa somente `/api` no domínio do frontend. O Next.js
+encaminha `/api/auth/*` para `/auth/*` e `/api/events/*` para `/events/*` na API,
+sem acrescentar outro `/api` ao destino. Essa topologia permite SameSite=Lax:
+os cookies pertencem ao frontend, mesmo com a API hospedada no Render.
+
+### Deploy Vercel → Render
+
+Na Vercel, configure `API_URL=https://sua-api.onrender.com` no ambiente de produção
+e nos ambientes de preview que usarão essa API. O valor é a origem da API,
+sem `/api`, credenciais, query ou fragmento; uma barra final é aceita. Não use
+`env` do next.config para expor essa variável. Não copie JWT, CSRF secrets,
+credenciais MongoDB ou segredos Google para o frontend. O único Client ID Google
+público continua em `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+
+Após publicar esta versão, remova `NEXT_PUBLIC_API_URL` da Vercel e configure
+`API_URL`. É necessário um novo build/deploy para aplicar a mudança. Não basta
+editar as variáveis de um deploy antigo. Localmente, use `API_URL=http://localhost:8080`
+em `.env.local` e reinicie o Next.js.
+
+No Render, mantenha `NODE_ENV=production`, `AUTH_COOKIE_SAME_SITE=lax` e
+`AUTH_ALLOWED_ORIGINS=https://seu-frontend.vercel.app` (ou o domínio personalizado).
+Liste outras origens autorizadas explicitamente, separadas por vírgula; não use
+wildcards nem libere previews desconhecidos. A origem não inclui `/api` nem barra
+final. Secure é obrigatório em produção pela configuração atual da API.
+Autorize também a origem real do frontend no cliente OAuth Google, se usado.
+
+O Route Handler é necessário porque um rewrite isolado não adapta o refresh
+(`Path=/auth`) e a recuperação (`Path=/auth/recovery`). Cada `Set-Cookie` é
+preservado separadamente: caminhos específicos recebem `/api`, enquanto `/`
+permanece `/`. Domain é removido para manter cookies host-only no frontend.
+HttpOnly, Secure, SameSite, Max-Age e Expires são preservados, inclusive ao apagar
+cookies. O proxy preserva o Origin recebido, sem fabricar uma origem autorizada,
+e encaminha Cookie, X-CSRF-Token, Content-Type, métodos, query e corpo. A API
+continua responsável por autenticação, autorização e validação CSRF.
+
+Não há cache de respostas do proxy: fetch usa `no-store`, a rota é dinâmica e
+respostas privadas desabilitam cache no navegador e na CDN. URL inválida ou
+ausente retorna 503 seguro; falha de transporte retorna 502/504, sem detalhes
+internos. O cliente não pode escolher host ou protocolo de destino.
+
+`HTTP_TRUST_PROXY_HOPS` não foi alterado. Sem verificar os cabeçalhos de uma
+requisição real Vercel → Render, não é possível determinar um número seguro de
+saltos. O proxy não repassa X-Forwarded-\* fornecidos pelo cliente. A atribuição
+do IP e o limite de login por IP podem agrupar usuários pelo IP de saída do proxy;
+valide essa cadeia no ambiente hospedado antes de mudar a confiança ou os limites.
+
+As chamadas atuais de autenticação/eventos são feitas por Client Components e
+usam o Axios de navegador com `/api`. O Route Handler usa URL absoluta no servidor.
+Não há chamada autenticada em Server Components atualmente. Se adicionada,
+deve acessar a API diretamente com URL absoluta e encaminhar explicitamente os
+cookies da requisição corrente; não reutilize o coordenador de navegador no servidor.
+Renovações que alterem cookies precisam ocorrer em Route Handlers ou Server Actions.
 
 ## Fluxo de sessão
 
-Axios central usa baseURL pública, withCredentials=true e timeout. Todos os POST
+Axios central usa baseURL relativa `/api`, withCredentials=true e timeout. Todos os POST
 enviam JSON e X-CSRF-Token. Antes de cada POST, GET /auth/csrf obtém um token novo,
 usado apenas em memória durante essa operação. O GET e o POST compartilham o
 mesmo Web Lock; outra aba desta aplicação não pode substituir o cookie entre eles.
@@ -115,7 +164,8 @@ não há fallback que arrisque rotações concorrentes. A coordenação cobre ab
 mesma origem frontend, não Postman ou outro aplicativo/origem que altere os mesmos
 cookies em paralelo.
 
-Access/refresh permanecem exclusivamente em cookies HttpOnly da API. O frontend
+Access/refresh permanecem exclusivamente em cookies HttpOnly emitidos pela API
+e encaminhados ao domínio do frontend pelo proxy. O código de navegador
 não lê esses cookies, não cria Authorization e não usa localStorage/sessionStorage.
 ID token Google só transita do callback oficial para o POST, sem estado React ou
 logs. A senha digitada não é normalizada e só é limpa após autenticação confirmada.
@@ -173,12 +223,20 @@ está fora desta etapa; os campos opcionais do contrato não geram uma nova tela
   `RecoveryScreen` e seu módulo implementam as quatro etapas de recuperação.
 - `src/components/ui`: Button e seu CSS Module, reutilizado por Entrar/Sair.
 - `src/lib/http/client.ts`: Axios genérico; coordenação está em auth.
+- `src/app/api/[...path]/route.ts` e `src/lib/http/api-proxy.ts`: proxy Node.js,
+  configuração `API_URL`, encaminhamento privado e adaptação do escopo dos cookies.
 - `src/config/public.ts`: configuração pública, endpoints e apresentação.
 - `src/styles/tokens.css`: tokens compartilhados. globals.css contém reset,
   bases e utilitário acessível; login.css global foi removido.
 - `public/patotafut-logo.png`: imagem original extraída do objeto 77 da página 8 do
   PDF, com transparência e apenas margens transparentes removidas.
 - `tests/auth.test.ts`: cenários de autenticação com adapter Axios simulado.
+- `tests/proxy.test.ts`: transporte, configuração fixa, cookies e falhas com fetch simulado.
+- `npm run test:proxy:browser`: Chromium → Next de produção (porta 3100) → Express
+  real, com os Services da API e persistência somente em memória. Execute os builds
+  nos dois projetos antes. Não cria contas nem grava no MongoDB. As capturas ficam
+  em `.test-build/proxy-auth/`. Cobre login, reload, refresh, logout, sessão expirada,
+  rejeição Origin/CSRF e caminhos de rede `/api`; não comprova o deploy Vercel/Render.
 
 As páginas 2–8 foram renderizadas e examinadas visualmente. Cores, escala de fontes
 12/14/16/18/20/28, pesos 400/500/600/700, espaçamentos e raios seguem as tabelas.

@@ -36,8 +36,11 @@ try {
     for (const managing of [false, true]) {
       const context = await browser.newContext({ viewport, hasTouch: true });
       const page = await context.newPage();
-      await page.route('http://localhost:8080/**', async (route) => {
-        const path = new URL(route.request().url()).pathname;
+      await page.route('http://localhost:3000/api/**', async (route) => {
+        const path = new URL(route.request().url()).pathname.replace(
+          /^\/api(?=\/)/,
+          '',
+        );
         const body =
           path === '/auth/me'
             ? { user }

@@ -4,7 +4,7 @@ export interface PublicConfig {
 }
 
 export const publicConfig: PublicConfig = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? '',
+  apiUrl: '/api',
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? '',
 };
 

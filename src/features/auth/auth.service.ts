@@ -99,6 +99,7 @@ export class AuthClient {
   ) {}
 
   private configured(): void {
+    if (this.apiUrl === '/api') return;
     try {
       const url = new URL(this.apiUrl);
       if (
