@@ -14,12 +14,14 @@ export function AppShell({
   onLogout,
   busy,
   section,
+  titleAction,
 }: {
   children: ReactNode;
   title: string;
   managing: boolean;
   organization?: boolean;
   section?: string;
+  titleAction?: ReactNode;
   onLogout: () => void;
   busy: boolean;
 }) {
@@ -49,7 +51,10 @@ export function AppShell({
         tabIndex={0}
         aria-label={title}
       >
-        <h1 className={styles.pageTitle}>{title}</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.pageTitle}>{title}</h1>
+          {titleAction}
+        </div>
         {children}
       </main>
       <nav className={styles.menu} aria-label="Menu principal">

@@ -29,8 +29,24 @@
   width: 42px;
   height: auto;
 }
+.titleRow {
+  display: grid;
+  grid-template-columns: var(--touch-target) minmax(0, 1fr) var(--touch-target);
+  align-items: center;
+  width: 100%;
+  max-width: var(--content-mobile);
+  margin: var(--space-base) auto var(--space-lg);
+}
+.titleRow > button {
+  grid-column: 3;
+  grid-row: 1;
+}
 .pageTitle {
-  margin: var(--space-base) 0 var(--space-lg);
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  margin: 0;
   font-size: var(--font-title);
   font-weight: var(--weight-regular);
   text-align: center;
@@ -314,10 +330,6 @@
 .carouselControls button:disabled {
   cursor: default;
   opacity: 0.35;
-}
-.refresh {
-  align-self: flex-end;
-  margin-bottom: calc(-1 * var(--space-base));
 }
 .field {
   display: flex;
@@ -672,6 +684,9 @@
   .content {
     max-width: 880px;
     gap: var(--space-xl);
+  }
+  .titleRow {
+    max-width: 880px;
   }
   .content > .form,
   .filters {

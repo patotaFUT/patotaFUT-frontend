@@ -399,6 +399,23 @@ export function EventsScreen({
       organization={admin}
       onLogout={() => void auth.logout()}
       busy={busy || auth.operation !== 'idle'}
+      titleAction={
+        allowed ? (
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label={c.retry}
+            title={c.retry}
+            disabled={busy || loading}
+            onClick={() => {
+              setError(undefined);
+              setReload((v) => v + 1);
+            }}
+          >
+            <FiRefreshCw aria-hidden="true" />
+          </button>
+        ) : undefined
+      }
     >
       <div className={styles.content}>
         {!allowed ? (
@@ -420,19 +437,6 @@ export function EventsScreen({
                 {error}
               </p>
             )}
-            <button
-              type="button"
-              className={`${styles.iconButton} ${styles.refresh}`}
-              aria-label={c.retry}
-              title={c.retry}
-              disabled={busy || loading}
-              onClick={() => {
-                setError(undefined);
-                setReload((v) => v + 1);
-              }}
-            >
-              <FiRefreshCw aria-hidden="true" />
-            </button>
             {eventId === undefined ? (
               <>
                 <form
