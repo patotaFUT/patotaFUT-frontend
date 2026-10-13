@@ -20,25 +20,23 @@
   position: relative;
   background: var(--color-background);
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  flex-direction: column;
-  gap: var(--space-lg);
-  padding: var(--space-sm) 0 var(--space-lg);
+  padding: var(--space-sm) 0;
 }
 .header img {
-  width: var(--event-logo-width);
+  /* Shield scale in the header v2 drawing at a 390px mobile viewport. */
+  width: 42px;
   height: auto;
 }
-.header h1 {
+.pageTitle {
+  margin: var(--space-base) 0 var(--space-lg);
   font-size: var(--font-title);
   font-weight: var(--weight-regular);
   text-align: center;
   line-height: var(--line-heading);
 }
 .header > button {
-  position: absolute;
-  right: 0;
-  top: var(--space-sm);
   color: var(--color-secondary);
 }
 .main {
@@ -708,16 +706,7 @@
   }
 }
 @media (max-height: 650px) {
-  .header {
-    flex-direction: row;
-    justify-content: center;
-    gap: var(--space-md);
-    padding: var(--space-sm) var(--touch-target) var(--space-md);
-  }
-  .header img {
-    width: var(--event-logo-width-compact);
-  }
-  .header h1 {
+  .pageTitle {
     font-size: var(--font-heading);
   }
   .modal {

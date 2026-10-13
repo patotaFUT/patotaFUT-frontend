@@ -33,7 +33,6 @@ export function AppShell({
           alt="PatotaFUT"
           priority
         />
-        <h1>{title}</h1>
         <button
           type="button"
           disabled={busy}
@@ -50,6 +49,7 @@ export function AppShell({
         tabIndex={0}
         aria-label={title}
       >
+        <h1 className={styles.pageTitle}>{title}</h1>
         {children}
       </main>
       <nav className={styles.menu} aria-label="Menu principal">
