@@ -2,6 +2,19 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { apiOrigin, forwardApi, proxyCookie } from '../src/lib/http/api-proxy';
 import { publicConfig } from '../src/config/public';
+import { proxyTimeout } from '../src/features/auth/access-timing';
+
+test('Access wake-up budget is limited to session endpoints, not events or form submissions', () => {
+  for (const endpoint of ['me', 'csrf', 'refresh'])
+    assert.equal(proxyTimeout(['auth', endpoint]), 60_000);
+  for (const segments of [
+    ['events'],
+    ['events', 'formation'],
+    ['auth', 'login'],
+    ['auth', 'recovery', 'reset'],
+  ])
+    assert.equal(proxyTimeout(segments), 15_000);
+});
 
 const backend = 'https://api.example.invalid';
 const frontend = 'https://patota.example.invalid';

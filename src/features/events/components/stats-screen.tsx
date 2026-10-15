@@ -1,4 +1,5 @@
 'use client';
+import { GlobalAccessLoading } from '@/features/auth/components/global-access-loading';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/use-auth';
@@ -22,6 +23,10 @@ export function StatsScreen() {
       onLogout={() => void auth.logout()}
       busy={auth.operation !== 'idle'}
     >
+      <GlobalAccessLoading
+        session={auth.session}
+        onRetry={() => void auth.restore()}
+      />
       <p role="status">
         {auth.session.status === 'authenticated'
           ? c.comingSoon

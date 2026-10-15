@@ -1,4 +1,5 @@
 'use client';
+import { GlobalAccessLoading } from '@/features/auth/components/global-access-loading';
 
 import { FiCheckCircle, FiLogOut } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,10 @@ export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
         mode === 'register' ? authContent.registerTitle : authContent.title
       }
     >
+      <GlobalAccessLoading
+        session={auth.session}
+        onRetry={() => void auth.restore()}
+      />
       {auth.session.status === 'checking' && (
         <p className={styles.notice} role="status">
           {authContent.checking}

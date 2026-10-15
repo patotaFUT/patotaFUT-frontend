@@ -1,4 +1,5 @@
 import type { AxiosInstance, AxiosResponse } from 'axios';
+import { accessRequestTimeout, accessRestoreTimeout } from './access-timing';
 import { authEndpoints } from '../../config/public';
 import { authContent, recoveryContent } from './auth.content';
 import {
@@ -128,10 +129,16 @@ export class AuthClient {
       | RecoveryCodeRequest
       | ResetPasswordRequest
       | Record<string, unknown>,
+    signal?: AbortSignal,
   ): Promise<AxiosResponse<unknown>> {
     // A fresh CSRF GET + POST run under the SAME cross-tab lock. Other tabs
     // cannot replace the cookie between these requests. No CSRF persistence.
-    const csrf = await this.client.get<unknown>(authEndpoints.csrf);
+    const accessConfig =
+      signal === undefined ? {} : { signal, timeout: accessRequestTimeout };
+    const csrf = await this.client.get<unknown>(
+      authEndpoints.csrf,
+      accessConfig,
+    );
     if (csrf.status !== 200)
       throw new AuthRequestError(failureFor(csrf, 'local'));
     let token: string;
@@ -144,6 +151,7 @@ export class AuthClient {
       });
     }
     return this.client.post<unknown>(path, body, {
+      ...accessConfig,
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
     });
   }
@@ -287,29 +295,42 @@ export class AuthClient {
   }
 
   private async restoreOnce(renew: boolean): Promise<SessionState> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), accessRestoreTimeout);
+    const signal = controller.signal;
+    const accessConfig = { signal, timeout: accessRequestTimeout };
     try {
       this.configured();
       return await this.coordinator.exclusive(
         async (): Promise<SessionState> => {
           // Read /me inside the lock too: another tab's pending read uses the
           // updated access cookie and does not rotate refresh a second time.
-          let response = await this.client.get<unknown>(authEndpoints.me);
+          let response = await this.client.get<unknown>(
+            authEndpoints.me,
+            accessConfig,
+          );
           if (response.status === 401) {
             if (!renew) return { status: 'unauthenticated' };
-            const refresh = await this.post(authEndpoints.refresh, {});
+            const refresh = await this.post(authEndpoints.refresh, {}, signal);
             if (refresh.status === 401) {
               this.coordinator.notify('session-ended');
               return { status: 'unauthenticated' };
             }
             this.user(refresh);
-            response = await this.client.get<unknown>(authEndpoints.me);
+            response = await this.client.get<unknown>(
+              authEndpoints.me,
+              accessConfig,
+            );
             if (response.status === 401) return { status: 'unauthenticated' };
           }
           return { status: 'authenticated', user: this.user(response) };
         },
+        signal,
       );
     } catch (error: unknown) {
       return { status: 'error', error: safeFailure(error) };
+    } finally {
+      clearTimeout(timer);
     }
   }
 

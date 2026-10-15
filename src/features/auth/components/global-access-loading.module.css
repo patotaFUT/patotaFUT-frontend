@@ -1,0 +1,61 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  padding: max(var(--space-lg), env(safe-area-inset-top))
+    max(var(--space-lg), env(safe-area-inset-right))
+    max(var(--space-lg), env(safe-area-inset-bottom))
+    max(var(--space-lg), env(safe-area-inset-left));
+  background: var(--color-background);
+  color: var(--color-text);
+  overflow: auto;
+}
+.overlay[open] {
+  display: grid;
+  place-items: center;
+}
+.overlay::backdrop {
+  background: var(--color-background);
+}
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-base);
+  width: min(100%, 28rem);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ball {
+  width: 96px;
+  height: 96px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+}
+.animated {
+  animation: roll 2.4s ease-in-out infinite;
+}
+.label {
+  font-size: var(--font-subheading);
+  font-weight: var(--weight-semibold);
+}
+@keyframes roll {
+  0%,
+  100% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(8deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animated {
+    animation: none;
+  }
+}

@@ -2,7 +2,7 @@ import { authContent } from './auth.content';
 
 export type SessionNotice = 'session-changed' | 'session-ended';
 export interface AuthCoordinator {
-  exclusive<T>(operation: () => Promise<T>): Promise<T>;
+  exclusive<T>(operation: () => Promise<T>, signal?: AbortSignal): Promise<T>;
   notify(notice: SessionNotice): void;
   subscribe(listener: (notice: SessionNotice) => void): () => void;
 }
@@ -24,11 +24,18 @@ export function createBrowserCoordinator(apiUrl: string): AuthCoordinator {
     };
   }
   return {
-    async exclusive<T>(operation: () => Promise<T>): Promise<T> {
+    async exclusive<T>(
+      operation: () => Promise<T>,
+      signal?: AbortSignal,
+    ): Promise<T> {
       if (typeof navigator === 'undefined' || navigator.locks === undefined)
         throw new Error(authContent.browserUnsupported);
       connect();
-      return navigator.locks.request(name, { mode: 'exclusive' }, operation);
+      return navigator.locks.request(
+        name,
+        { mode: 'exclusive', ...(signal === undefined ? {} : { signal }) },
+        operation,
+      );
     },
     notify(notice: SessionNotice): void {
       channel?.postMessage(notice);

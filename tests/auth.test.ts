@@ -23,6 +23,10 @@ import type {
 import { authContent } from '../src/features/auth/auth.content';
 import { recoveryContent } from '../src/features/auth/auth.content';
 import {
+  accessRequestTimeout,
+  accessRestoreTimeout,
+} from '../src/features/auth/access-timing';
+import {
   validateRecoveryEmail,
   validateReset,
 } from '../src/features/auth/auth.validation';
@@ -39,6 +43,110 @@ const user = {
   lastName: 'Test',
   role: 'PLAYER',
 };
+
+test('Access: slow wake-up succeeds after 20s; ordinary operations retain their local timeout', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  const calls: { path: string | undefined; timeout: number | undefined }[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    calls.push({ path: config.url, timeout: config.timeout });
+    if (config.url === '/auth/me')
+      await new Promise<void>((resolve) => setTimeout(resolve, 20_000));
+    const data =
+      config.url === '/auth/csrf'
+        ? { csrfToken: `${'a'.repeat(64)}.${'b'.repeat(64)}` }
+        : { user };
+    return { status: 200, statusText: '', data, headers: {}, config };
+  };
+  const auth = new AuthClient(
+    axios.create({ adapter, timeout: 15_000 }),
+    {
+      exclusive: (operation) => operation(),
+      notify() {},
+      subscribe: () => () => undefined,
+    },
+    '/api',
+  );
+  const pending = auth.restore();
+  assert.equal(auth.restore(), pending);
+  context.mock.timers.tick(20_000);
+  assert.equal((await pending).status, 'authenticated');
+  await auth.login({ email: user.email, password: 'fixture' });
+  assert.deepEqual(calls, [
+    { path: '/auth/me', timeout: accessRequestTimeout },
+    { path: '/auth/csrf', timeout: 15_000 },
+    { path: '/auth/login', timeout: 15_000 },
+  ]);
+});
+
+test('Access: total deadline cancels lock wait; retry is explicit and deduplicated', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  let waits = 0;
+  let blocked = true;
+  const coordinator: AuthCoordinator = {
+    exclusive<T>(
+      operation: () => Promise<T>,
+      signal?: AbortSignal,
+    ): Promise<T> {
+      waits++;
+      if (!blocked) return operation();
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => reject(new Error('timeout')), {
+          once: true,
+        });
+      });
+    },
+    notify() {},
+    subscribe: () => () => undefined,
+  };
+  const adapter: AxiosAdapter = async (config) => {
+    assert.equal(config.timeout, accessRequestTimeout);
+    assert.ok(config.signal);
+    return { status: 200, statusText: '', data: { user }, headers: {}, config };
+  };
+  const auth = new AuthClient(axios.create({ adapter }), coordinator, '/api');
+  const pending = auth.restore();
+  assert.equal(auth.restore(), pending);
+  context.mock.timers.tick(accessRestoreTimeout);
+  const result = await pending;
+  assert.equal(result.status, 'error');
+  if (result.status === 'error')
+    assert.equal(result.error.kind, 'communication');
+  assert.equal(waits, 1);
+  blocked = false;
+  assert.equal((await auth.restore()).status, 'authenticated');
+  assert.equal(waits, 2);
+});
+
+test('Access: deadline aborts in-flight request without replay; next restore can succeed', async (context) => {
+  context.mock.timers.enable({ apis: ['setTimeout'] });
+  let calls = 0;
+  const adapter: AxiosAdapter = async (config) => {
+    calls++;
+    if (calls === 1)
+      await new Promise<void>((_resolve, reject) => {
+        config.signal?.addEventListener?.('abort', () =>
+          reject(new Error('aborted')),
+        );
+      });
+    return { status: 200, statusText: '', data: { user }, headers: {}, config };
+  };
+  const auth = new AuthClient(
+    axios.create({ adapter }),
+    {
+      exclusive: (operation) => operation(),
+      notify() {},
+      subscribe: () => () => undefined,
+    },
+    '/api',
+  );
+  const pending = auth.restore();
+  assert.equal(calls, 1);
+  context.mock.timers.tick(accessRestoreTimeout);
+  assert.equal((await pending).status, 'error');
+  assert.equal(calls, 1);
+  assert.equal((await auth.restore()).status, 'authenticated');
+  assert.equal(calls, 2);
+});
 
 function recoveryFixture() {
   let tail: Promise<void> = Promise.resolve();

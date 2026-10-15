@@ -1,5 +1,7 @@
 'use client';
+import { GlobalAccessLoading } from '@/features/auth/components/global-access-loading';
 import Link from 'next/link';
+import { useAuth } from '../use-auth';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { FiCheckCircle, FiHash, FiLock, FiMail } from 'react-icons/fi';
@@ -21,6 +23,7 @@ import formStyles from './auth-form.module.css';
 import styles from './recovery-screen.module.css';
 
 export function RecoveryScreen() {
+  const auth = useAuth();
   const [stage, setStage] = useState<RecoveryStage>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
@@ -157,6 +160,10 @@ export function RecoveryScreen() {
           : content.reset;
   return (
     <AuthLayout title={title}>
+      <GlobalAccessLoading
+        session={auth.session}
+        onRetry={() => void auth.restore()}
+      />
       {failure !== undefined && (
         <p className={styles.error} role="alert">
           {failure}

@@ -20,18 +20,43 @@ export function useAuth() {
   const pendingNotice = useRef(false);
   const revision = useRef(0);
   const mounted = useRef(false);
+  const restoring = useRef<Promise<void> | undefined>();
+  const blockingRestore = useRef(false);
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
-  const restore = useCallback(async (renew = true): Promise<void> => {
-    const current = ++revision.current;
-    const result = await authClient.restore(renew);
-    if (mounted.current && revision.current === current) {
-      setSession(result);
-      setSuccess(false);
-    }
-  }, []);
+  const restore = useCallback(
+    (renew = true, background = false): Promise<void> => {
+      if (!background) {
+        blockingRestore.current = true;
+        setSession({ status: 'checking' });
+      }
+      if (restoring.current !== undefined) return restoring.current;
+      blockingRestore.current = !background;
+      const current = ++revision.current;
+      const pending = authClient
+        .restore(renew)
+        .then((result) => {
+          if (mounted.current && revision.current === current) {
+            // A secondary visibility probe must not cover an already usable screen.
+            if (blockingRestore.current || result.status !== 'error')
+              setSession(result);
+            setSuccess(false);
+          }
+        })
+        .finally(() => {
+          if (restoring.current === pending) restoring.current = undefined;
+        });
+      restoring.current = pending;
+      return pending;
+    },
+    [],
+  );
 
   useEffect(() => {
     mounted.current = true;
+    // AuthClient deduplicates the actual request across Strict Mode remounts.
+    restoring.current = undefined;
     void restore();
     let unsubscribe: (() => void) | undefined;
     try {
@@ -46,8 +71,13 @@ export function useAuth() {
       setError(safeFailure(caught));
     }
     const onVisible = (): void => {
-      if (document.visibilityState === 'visible' && !busy.current)
-        void restore();
+      if (
+        document.visibilityState === 'visible' &&
+        !busy.current &&
+        sessionRef.current.status !== 'error' &&
+        sessionRef.current.status !== 'checking'
+      )
+        void restore(true, true);
     };
     document.addEventListener('visibilitychange', onVisible);
     return (): void => {
@@ -65,6 +95,7 @@ export function useAuth() {
     if (busy.current) return;
     busy.current = true;
     revision.current++;
+    restoring.current = undefined;
     setOperation(kind);
     setError(undefined);
     try {

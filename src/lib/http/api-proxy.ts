@@ -1,5 +1,7 @@
 // Imported by the server Route Handler only. Never import into Client Components.
 // The browser knows /api; only the Next.js server reads the backend origin.
+import { proxyTimeout } from '../../features/auth/access-timing';
+
 const privateCacheHeaders = {
   'Cache-Control': 'private, no-store, max-age=0',
   'CDN-Cache-Control': 'no-store',
@@ -105,7 +107,10 @@ export async function forwardApi(
       ...(body === undefined ? {} : { body }),
       cache: 'no-store',
       redirect: 'manual',
-      signal: AbortSignal.any([request.signal, AbortSignal.timeout(15000)]),
+      signal: AbortSignal.any([
+        request.signal,
+        AbortSignal.timeout(proxyTimeout(segments)),
+      ]),
     });
     const outgoing = new Headers();
     const connectionHeaders = new Set(

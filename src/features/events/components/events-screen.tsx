@@ -1,4 +1,5 @@
 'use client';
+import { GlobalAccessLoading } from '@/features/auth/components/global-access-loading';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -382,6 +383,10 @@ export function EventsScreen({
         onLogout={() => void auth.logout()}
         busy={auth.operation !== 'idle'}
       >
+        <GlobalAccessLoading
+          session={auth.session}
+          onRetry={() => void auth.restore()}
+        />
         <p className={styles.notice} role="status">
           {auth.session.status === 'error'
             ? auth.session.error.message
@@ -417,6 +422,10 @@ export function EventsScreen({
         ) : undefined
       }
     >
+      <GlobalAccessLoading
+        session={auth.session}
+        onRetry={() => void auth.restore()}
+      />
       <div className={styles.content}>
         {!allowed ? (
           <p role="status">{c.forbidden}</p>
