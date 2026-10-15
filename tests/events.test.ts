@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { editDateEntry } from '../src/features/events/date-entry';
 import axios from 'axios';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AuthClient } from '../src/features/auth/auth.service';
@@ -147,10 +148,76 @@ test('DTOs validate IDs, enums, revisions and serialized dates without Mongoose'
     parseDetail({ event: { ...event, revision: -1 }, teams: [] }),
   );
 });
+test('Date entry supports partial typing, paste, selection and deletion around separators', () => {
+  let value = '';
+  for (const digit of '15102026') {
+    const next = editDateEntry(value, value + digit, value.length + 1);
+    value = next.value;
+    assert.equal(next.start, value.length);
+  }
+  assert.equal(value, '15/10/2026');
+  for (const pasted of ['15102026', '15/10/2026'])
+    assert.equal(editDateEntry('', pasted, pasted.length).value, value);
+  assert.deepEqual(editDateEntry(value, '15/12/2026', 5), {
+    value: '15/12/2026',
+    start: 5,
+    end: 5,
+  });
+  assert.deepEqual(editDateEntry(value, '15/1/2026', 4), {
+    value: '15/12/026',
+    start: 4,
+    end: 4,
+  });
+  assert.deepEqual(
+    editDateEntry(value, '1510/2026', 2, 2, 'deleteContentBackward'),
+    {
+      value: '11/02/026',
+      start: 1,
+      end: 1,
+    },
+  );
+  assert.deepEqual(
+    editDateEntry(value, '15/102026', 5, 5, 'deleteContentForward'),
+    {
+      value: '15/10/026',
+      start: 5,
+      end: 5,
+    },
+  );
+  assert.equal(editDateEntry(value, '', 0).value, '');
+  let remaining = value;
+  while (remaining) {
+    const raw = remaining.slice(0, -1);
+    const next = editDateEntry(
+      remaining,
+      raw,
+      raw.length,
+      raw.length,
+      'deleteContentBackward',
+    );
+    assert.ok(next.value.length < remaining.length);
+    assert.equal(next.start, next.value.length);
+    remaining = next.value;
+  }
+  assert.deepEqual(
+    editDateEntry(value, '1510/2026', 2, 2, 'deleteContentForward'),
+    {
+      value: '15/02/026',
+      start: 2,
+      end: 2,
+    },
+  );
+  for (const partial of ['1', '15', '15/1', '15/10', '15/10/202']) {
+    assert.equal(editDateEntry('', partial, partial.length).value, partial);
+    assert.equal(parseDisplayDate(partial), undefined);
+  }
+});
 test('Civil event calendar: display DD/MM/YYYY, exact API YYYY-MM-DD, no timezone shift, strict clock and same-day end', () => {
   assert.equal(formatEventDate('2026-12-31'), '31/12/2026');
   assert.equal(parseDisplayDate('31/12/2026'), '2026-12-31');
   assert.equal(parseDisplayDate('29/02/2028'), '2028-02-29');
+  assert.equal(parseDisplayDate('29/02/2000'), '2000-02-29');
+  assert.equal(parseDisplayDate('29/02/1900'), undefined);
   for (const invalid of ['29/02/2026', '31/04/2026', '2026-12-31', '1/1/2026'])
     assert.equal(parseDisplayDate(invalid), undefined);
   const input = {
@@ -178,11 +245,12 @@ test('Create/edit frontend contracts send calendar fields and revision; server c
   const f = fixture();
   const input = {
     name: event.name,
-    date: '2026-12-31',
+    date: parseDisplayDate(editDateEntry('', '31122026', 8).value) ?? '',
     startTime: '20:00',
     endTime: '21:30',
   };
   await f.client.create(input);
+  assert.equal(input.date, '2026-12-31');
   assert.deepEqual(f.calls.at(-1)?.body, input);
   assert.equal(f.calls.at(-1)?.url, '/events');
   await f.client.edit(id, 7, input);

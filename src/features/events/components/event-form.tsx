@@ -8,6 +8,7 @@ import { formatEventDate, parseDisplayDate } from '../events.calendar';
 import { validateEvent } from '../events.validation';
 import type { EventFieldErrors } from '../events.validation';
 import { eventContent as c } from '../events.content';
+import { DateInput } from './date-input';
 export function EventForm({
   initial,
   busy,
@@ -74,15 +75,19 @@ export function EventForm({
           Data (DD/MM/AAAA)
           <span className={styles.fieldBox}>
             <FiCalendar aria-hidden="true" />
-            <input
+            <DateInput
               name="date"
-              type="text"
-              inputMode="numeric"
               placeholder="DD/MM/AAAA"
-              maxLength={10}
               required
               value={displayDate}
-              onChange={(event) => setDisplayDate(event.target.value)}
+              onChange={(value) => {
+                setDisplayDate(value);
+                setErrors((current) => {
+                  const next = { ...current };
+                  delete next.date;
+                  return next;
+                });
+              }}
               disabled={busy}
               aria-invalid={errors.date !== undefined}
               aria-describedby={
