@@ -45,7 +45,7 @@ export const eventContent = {
   resume: 'Retomar',
   finishConfirm:
     'Tem certeza de que deseja finalizar este evento? Ele não poderá ser retomado.',
-  noStats: 'Não há resultados ou estatísticas disponíveis para este evento.',
+  noStats: 'Evento finalizado. Consulte os rankings na tela de estatísticas.',
   missingTeams: 'O Organizador ainda não formou os times.',
   allocated:
     'Presença vinculada à formação. Procure o Organizador ou Administrador para alterações.',

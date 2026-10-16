@@ -83,7 +83,7 @@ export async function forwardApi(
     );
   }
   if (
-    !['auth', 'events'].includes(segments[0] ?? '') ||
+    !['auth', 'events', 'statistics'].includes(segments[0] ?? '') ||
     segments.some((segment) => !/^[a-zA-Z0-9_-]+$/.test(segment))
   )
     return failure(404, 'Recurso não encontrado.');
@@ -136,7 +136,7 @@ export async function forwardApi(
       const redirect = new URL(location, target);
       if (
         redirect.origin !== origin.origin ||
-        !/^\/(?:auth|events)(?:\/|$)/.test(redirect.pathname)
+        !/^\/(?:auth|events|statistics)(?:\/|$)/.test(redirect.pathname)
       )
         return failure(
           502,

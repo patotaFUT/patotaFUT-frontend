@@ -20,6 +20,23 @@ const backend = 'https://api.example.invalid';
 const frontend = 'https://patota.example.invalid';
 const csrf = 'a'.repeat(64) + '.' + 'b'.repeat(64);
 
+test('Statistics proxy permits only the fixed upstream aggregate path and preserves its civil period', async () => {
+  const response = await forwardApi(
+    new Request(`${frontend}/api/statistics?from=2024-02-01&to=2024-02-29`),
+    ['statistics'],
+    backend,
+    async (url) => {
+      assert.equal(
+        String(url),
+        `${backend}/statistics?from=2024-02-01&to=2024-02-29`,
+      );
+      return Response.json({ scorers: [], assistants: [] });
+    },
+  );
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+});
+
 test('Server configuration: fixed origin, HTTPS outside loopback, no credentials or API prefix', () => {
   assert.equal(publicConfig.apiUrl, '/api');
   assert.equal(apiOrigin(backend).origin, backend);
