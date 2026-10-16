@@ -34,6 +34,7 @@ import { FormationForm } from './formation-form';
 import { ParticipantsView } from './participants-view';
 import styles from './events.module.css';
 import { EventOverview } from './event-overview';
+import { EventHighlights } from '@/features/statistics/components/event-highlights';
 type Dialog =
   | 'create'
   | 'edit'
@@ -866,22 +867,17 @@ export function EventsScreen({
                   />
                 )}
                 {dialog === 'finish' && selected !== undefined && (
-                  <>
-                    <p>{c.finishConfirm}</p>
-                    <p className={styles.hint}>{c.noStats}</p>
-                    <Button
-                      className={`${styles.solid} ${styles.highlight} ${styles.centerAction}`}
-                      disabled={busy}
-                      onClick={() =>
-                        void action(selected, 'status', {
-                          status: 'FINISHED',
-                          confirmed: true,
-                        })
-                      }
-                    >
-                      Confirmar finalização
-                    </Button>
-                  </>
+                  <EventHighlights
+                    eventId={selected.id}
+                    revision={selected.revision}
+                    busy={busy}
+                    onConfirm={(revision) =>
+                      void action({ ...selected, revision }, 'status', {
+                        status: 'FINISHED',
+                        confirmed: true,
+                      })
+                    }
+                  />
                 )}
                 {dialog === 'remove' &&
                   selected !== undefined &&
