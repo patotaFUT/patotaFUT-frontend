@@ -448,6 +448,11 @@ export function EventsScreen({
             )}
             {eventId === undefined ? (
               <>
+                {managing && admin && (
+                  <Link className={styles.outline} href="/org/matches">
+                    Súmulas
+                  </Link>
+                )}
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();

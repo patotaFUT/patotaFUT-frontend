@@ -508,6 +508,21 @@
 .track::-webkit-scrollbar {
   display: none;
 }
+@media (min-width: 1024px) {
+  .pairOnDesktop {
+    max-width: 100%;
+  }
+  .pairOnDesktop .track {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    overflow: visible;
+    scroll-snap-type: none;
+  }
+  .pairOnDesktop .carouselControls {
+    display: none;
+  }
+}
 .track > * {
   flex: 0 0 100%;
   scroll-snap-align: start;

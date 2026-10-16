@@ -11,12 +11,14 @@ export function Carousel({
   label,
   initialIndex = 0,
   onActiveChange,
+  pairOnDesktop = false,
 }: {
   children: ReactNode;
   count: number;
   label: string;
   initialIndex?: number;
   onActiveChange?: (index: number) => void;
+  pairOnDesktop?: boolean;
 }) {
   const track = useRef<HTMLDivElement>(null);
   const change = useRef(onActiveChange);
@@ -24,6 +26,18 @@ export function Carousel({
   change.current = onActiveChange;
   const [active, setActive] = useState(0);
   const [atEnd, setAtEnd] = useState(count <= 1);
+  const [sideBySide, setSideBySide] = useState(false);
+  useEffect(() => {
+    if (!pairOnDesktop) {
+      setSideBySide(false);
+      return;
+    }
+    const media = window.matchMedia('(min-width: 1024px)');
+    const update = () => setSideBySide(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, [pairOnDesktop]);
   const synchronize = useCallback(() => {
     const node = track.current;
     if (node === null) return;
@@ -81,17 +95,19 @@ export function Carousel({
   }
   return (
     <section
-      className={styles.carousel}
+      className={[styles.carousel, pairOnDesktop ? styles.pairOnDesktop : '']
+        .filter(Boolean)
+        .join(' ')}
       aria-label={label}
-      aria-roledescription="carrossel"
+      aria-roledescription={sideBySide ? undefined : 'carrossel'}
     >
       <div
         ref={track}
         className={styles.track}
-        tabIndex={0}
+        tabIndex={sideBySide ? undefined : 0}
         onScroll={synchronize}
         onKeyDown={(event) => {
-          if (event.target !== event.currentTarget) return;
+          if (sideBySide || event.target !== event.currentTarget) return;
           if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
             event.preventDefault();
             move(
@@ -108,7 +124,7 @@ export function Carousel({
       >
         {children}
       </div>
-      {count > 1 && (
+      {count > 1 && !sideBySide && (
         <div className={styles.carouselControls}>
           <button
             type="button"

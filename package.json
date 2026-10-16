@@ -11,7 +11,8 @@
     "format": "prettier --write .",
     "test": "tsc -p tsconfig.test.json && node .test-build/tests/auth.test.js && node .test-build/tests/events.test.js && node .test-build/tests/proxy.test.js",
     "test:proxy:browser": "node scripts/proxy-auth.test.mjs",
-    "test:access:browser": "node scripts/access-loading.test.mjs"
+    "test:access:browser": "node scripts/access-loading.test.mjs",
+    "test:matches:browser": "node scripts/matches-browser.test.mjs"
   },
   "dependencies": {
     "axios": "1.15.1",

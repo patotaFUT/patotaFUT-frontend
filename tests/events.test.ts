@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import {
+  remainingSeconds,
+  clockText,
+  defaultGoalMinute,
+} from '../src/features/matches/match-clock';
 import { editDateEntry } from '../src/features/events/date-entry';
 import axios from 'axios';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
@@ -21,6 +26,18 @@ import {
   parseDisplayDate,
 } from '../src/features/events/events.calendar';
 const id = '507f1f77bcf86cd799439011';
+test('RN93: clock derives from system time, catches up after background and stays zero; goal minute is elapsed with zero after expiration', () => {
+  const started = '2026-10-16T12:00:00.000Z';
+  const start = Date.parse(started);
+  assert.equal(clockText(remainingSeconds(started, 3, start)), '03:00');
+  assert.equal(clockText(remainingSeconds(started, 3, start + 61000)), '01:59');
+  assert.equal(
+    clockText(remainingSeconds(started, 3, start + 600000)),
+    '00:00',
+  );
+  assert.equal(defaultGoalMinute(started, 3, start + 125000), 2);
+  assert.equal(defaultGoalMinute(started, 3, start + 180000), 0);
+});
 const user = {
   id,
   email: 'events@example.invalid',
