@@ -1,0 +1,79 @@
+.duel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+}
+.score {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-section);
+  padding: var(--space-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-base);
+  text-align: center;
+}
+.score strong {
+  font-size: var(--font-heading);
+}
+.players {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.player {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill, 24px);
+  padding: var(--space-xs) var(--space-sm);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  text-align: left;
+}
+.playerName {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.player button {
+  flex: none;
+}
+.playerGoals {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+  flex: none;
+}
+.action:active:not(:disabled) {
+  filter: brightness(0.9);
+}
+.whistle {
+  width: 88px;
+  height: 88px;
+  margin: var(--space-lg) auto;
+}
+.record {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding-block: var(--space-sm);
+}
+.record > span {
+  flex: 1 1 160px;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  justify-content: center;
+}
