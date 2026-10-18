@@ -1,7 +1,8 @@
-// Run against the frontend on port 3000; API responses are simulated.
+// Real Next/Chromium; API responses are simulated. Optional external DATE_ENTRY_TEST_URL.
+import { spawn } from 'node:child_process';
 import { chromium, expect } from '@playwright/test';
 
-const base = 'http://localhost:3000';
+const base = process.env.DATE_ENTRY_TEST_URL ?? 'http://localhost:3106';
 const id = '507f1f77bcf86cd799439011';
 const user = {
   id,
@@ -26,8 +27,45 @@ const event = {
   ownAllocated: false,
   ownParticipantId: null,
 };
-const browser = await chromium.launch({ headless: true });
+const server = process.env.DATE_ENTRY_TEST_URL
+  ? undefined
+  : spawn(
+      process.execPath,
+      [
+        'node_modules/next/dist/bin/next',
+        'start',
+        '--port',
+        '3106',
+        '--hostname',
+        '127.0.0.1',
+      ],
+      {
+        windowsHide: true,
+        env: { ...process.env, API_URL: 'http://127.0.0.1:9' },
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    );
+let startup = '',
+  browser;
+for (const stream of [server?.stdout, server?.stderr])
+  stream?.on('data', (chunk) => {
+    startup = (startup + chunk).slice(-5000);
+  });
 try {
+  await expect
+    .poll(
+      async () => {
+        if (server && server.exitCode !== null) throw new Error(startup);
+        try {
+          return (await fetch(`${base}/org/events`)).status;
+        } catch {
+          return 0;
+        }
+      },
+      { timeout: 30000 },
+    )
+    .toBe(200);
+  browser = await chromium.launch({ headless: true });
   for (const viewport of [
     { width: 390, height: 844 },
     { width: 768, height: 1024 },
@@ -41,6 +79,7 @@ try {
       });
       try {
         const page = await context.newPage();
+        await page.clock.setFixedTime(new Date('2026-10-18T02:30:00Z'));
         const writes = [];
         await page.route(`${base}/api/**`, async (route) => {
           const request = route.request();
@@ -103,7 +142,15 @@ try {
           await expect(error).toBeVisible();
           expect(writes).toHaveLength(0);
         }
-        await date.fill('29022000');
+        await date.fill('16102026');
+        await page
+          .getByRole('button', { name: 'Confirmar', exact: true })
+          .click();
+        await expect(error).toHaveText(
+          'A data do evento deve ser hoje ou uma data futura.',
+        );
+        expect(writes).toHaveLength(0);
+        await date.fill('29022028');
         await expect(error).toHaveCount(0);
         await page
           .getByRole('button', { name: 'Confirmar', exact: true })
@@ -113,7 +160,7 @@ try {
           path: '/api/events',
           body: {
             name: 'Date test',
-            date: '2000-02-29',
+            date: '2028-02-29',
             startTime: '20:00',
             endTime: '21:30',
           },
@@ -123,14 +170,69 @@ try {
         });
         await page.getByRole('button', { name: 'Editar', exact: true }).click();
         await expect(date).toHaveValue('15/10/2026');
-        await date.fill('31122026');
+        await date.fill('16102026');
+        await page
+          .getByRole('button', { name: 'Confirmar', exact: true })
+          .click();
+        await expect(error).toBeVisible();
+        expect(writes).toHaveLength(1);
+        await date.fill('15102026');
         await page
           .getByRole('button', { name: 'Confirmar', exact: true })
           .click();
         await expect.poll(() => writes.length).toBe(2);
-        expect(writes[1].path).toBe(`/api/events/${id}/edit`);
-        expect(writes[1].body.date).toBe('2026-12-31');
-        expect(writes[1].body.revision).toBe(1);
+        expect(writes[1].body.date).toBe('2026-10-15');
+        await page.getByRole('button', { name: 'Editar', exact: true }).click();
+        await date.fill('31122026');
+        await page
+          .getByRole('button', { name: 'Confirmar', exact: true })
+          .click();
+        await expect.poll(() => writes.length).toBe(3);
+        expect(writes[2].path).toBe(`/api/events/${id}/edit`);
+        expect(writes[2].body.date).toBe('2026-12-31');
+        expect(writes[2].body.revision).toBe(1);
+        for (const day of ['17102026', '18102026']) {
+          await page.goto(`${base}/org/events`);
+          await page
+            .getByRole('button', { name: 'Criar evento', exact: true })
+            .click();
+          await page.locator('input[name="name"]').fill('Date test');
+          await page.locator('input[name="startTime"]').fill('00:00');
+          await page.locator('input[name="endTime"]').fill('00:01');
+          await date.fill(day);
+          const count = writes.length;
+          await page
+            .getByRole('button', { name: 'Confirmar', exact: true })
+            .click();
+          await expect.poll(() => writes.length).toBe(count + 1);
+          expect(writes.at(-1).body.date).toBe(
+            day === '17102026' ? '2026-10-17' : '2026-10-18',
+          );
+        }
+        // A form left open across Sao Paulo midnight must use the day at submit.
+        await page.goto(`${base}/org/events`);
+        await page
+          .getByRole('button', { name: 'Criar evento', exact: true })
+          .click();
+        await page.locator('input[name="name"]').fill('Midnight test');
+        await page.locator('input[name="startTime"]').fill('20:00');
+        await page.locator('input[name="endTime"]').fill('21:00');
+        await date.fill('17102026');
+        await page.clock.setFixedTime(new Date('2026-10-18T03:00:00.000Z'));
+        const count = writes.length;
+        await page
+          .getByRole('button', { name: 'Confirmar', exact: true })
+          .click();
+        await expect(error).toHaveText(
+          'A data do evento deve ser hoje ou uma data futura.',
+        );
+        expect(writes).toHaveLength(count);
+        await date.fill('18102026');
+        await page
+          .getByRole('button', { name: 'Confirmar', exact: true })
+          .click();
+        await expect.poll(() => writes.length).toBe(count + 1);
+        expect(writes.at(-1).body.date).toBe('2026-10-18');
         console.log(
           `PASS date entry ${viewport.width}x${viewport.height} ${timezoneId}`,
         );
@@ -140,5 +242,6 @@ try {
     }
   }
 } finally {
-  await browser.close();
+  await browser?.close();
+  server?.kill();
 }
