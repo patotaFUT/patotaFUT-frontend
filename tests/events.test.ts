@@ -283,7 +283,10 @@ test('Civil event calendar: display DD/MM/YYYY, exact API YYYY-MM-DD, no timezon
     startTime: event.startTime,
     endTime: event.endTime,
   };
-  assert.deepEqual(validateEvent(input), {});
+  assert.deepEqual(
+    validateEvent(input, undefined, new Date('2026-10-01T12:00:00Z')),
+    {},
+  );
   for (const time of ['24:00', '21:60', '9:00', '20:00:00'])
     assert.ok(validateEvent({ ...input, startTime: time }).startTime);
   for (const end of ['20:00', '19:00', '00:01'])
@@ -296,6 +299,32 @@ test('Civil event calendar: display DD/MM/YYYY, exact API YYYY-MM-DD, no timezon
   );
   assert.throws(() =>
     parseDetail({ event: { ...event, date: '2026-02-30' }, teams: [] }),
+  );
+});
+test('Event dates: today follows Sao Paulo, unchanged history is allowed, changed past dates are rejected', () => {
+  const input = {
+    name: 'Evento',
+    date: '2026-10-17',
+    startTime: '00:00',
+    endTime: '00:01',
+  };
+  const beforeMidnight = new Date('2026-10-18T02:59:59.999Z');
+  const afterMidnight = new Date('2026-10-18T03:00:00.000Z');
+  assert.deepEqual(validateEvent(input, undefined, beforeMidnight), {});
+  assert.ok(validateEvent(input, undefined, afterMidnight).date);
+  assert.deepEqual(validateEvent(input, input.date, afterMidnight), {});
+  assert.ok(
+    validateEvent({ ...input, date: '2026-10-16' }, input.date, afterMidnight)
+      .date,
+  );
+  for (const date of ['2026-10-18', '2026-10-19', '2028-02-29'])
+    assert.deepEqual(
+      validateEvent({ ...input, date }, input.date, afterMidnight),
+      {},
+    );
+  assert.ok(
+    validateEvent({ ...input, date: '2028-02-30' }, undefined, afterMidnight)
+      .date,
   );
 });
 test('Create/edit frontend contracts send calendar fields and revision; server confirmation is mandatory', async () => {

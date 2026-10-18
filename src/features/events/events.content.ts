@@ -1,4 +1,5 @@
 export const eventContent = {
+  pastDate: 'A data do evento deve ser hoje ou uma data futura.',
   schedule:
     'Horários no fuso America/Sao_Paulo. Início e término no mesmo dia.',
   invalidName: 'Informe um nome de até 200 caracteres.',

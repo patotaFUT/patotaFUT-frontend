@@ -33,7 +33,7 @@ export function EventForm({
         event.preventDefault();
         if (busy) return;
         const input = { ...data, date: parseDisplayDate(displayDate) ?? '' };
-        const invalid = validateEvent(input);
+        const invalid = validateEvent(input, initial?.date);
         setErrors(invalid);
         const field = Object.keys(invalid)[0];
         if (field !== undefined) {
