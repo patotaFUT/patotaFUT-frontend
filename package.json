@@ -9,11 +9,13 @@
     "typecheck": "tsc --noEmit",
     "lint": "node scripts/lint.mjs && prettier --check .",
     "format": "prettier --write .",
-    "test": "tsc -p tsconfig.test.json && node .test-build/tests/auth.test.js && node .test-build/tests/events.test.js && node .test-build/tests/proxy.test.js && node .test-build/tests/statistics.test.js",
+    "test": "tsc -p tsconfig.test.json && node .test-build/tests/auth.test.js && node .test-build/tests/events.test.js && node .test-build/tests/proxy.test.js && node .test-build/tests/statistics.test.js && node .test-build/tests/organization.test.js",
     "test:proxy:browser": "node scripts/proxy-auth.test.mjs",
     "test:access:browser": "node scripts/access-loading.test.mjs",
     "test:matches:browser": "node scripts/matches-browser.test.mjs",
-    "test:statistics:browser": "node scripts/statistics-browser.test.mjs"
+    "test:statistics:browser": "node scripts/statistics-browser.test.mjs",
+    "test:organization:browser": "node scripts/organization-browser.test.mjs",
+    "test:back-navigation:browser": "node scripts/back-navigation.test.mjs"
   },
   "dependencies": {
     "axios": "1.15.1",

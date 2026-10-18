@@ -40,3 +40,27 @@ export function safeReturn(
 export function withReturn(path: string, origin: string): string {
   return `${path}?returnTo=${encodeURIComponent(safeReturn(origin, '/org/events'))}`;
 }
+
+// Same explicit destinations as the former content links; never depend on browser history.
+export function eventBackHref(input: {
+  eventId: string | undefined;
+  managing: boolean;
+  view: 'manage' | 'teams' | 'editTeams';
+  organizer: boolean;
+  returnTo: string | null;
+}): string | undefined {
+  if (input.eventId === undefined) return input.managing ? '/org' : undefined;
+  if (input.view === 'editTeams')
+    return withReturn(
+      `/org/events/${input.eventId}/teams`,
+      safeReturn(input.returnTo, '/org/events'),
+    );
+  return safeReturn(
+    input.returnTo,
+    input.managing
+      ? input.view === 'teams' && input.organizer
+        ? `/org/events/${input.eventId}`
+        : '/org/events'
+      : '/events',
+  );
+}

@@ -6,6 +6,7 @@ import {
   defaultGoalMinute,
 } from '../src/features/matches/match-clock';
 import { editDateEntry } from '../src/features/events/date-entry';
+import { eventBackHref, withReturn } from '../src/features/events/navigation';
 import axios from 'axios';
 import type { AxiosAdapter, InternalAxiosRequestConfig } from 'axios';
 import { AuthClient } from '../src/features/auth/auth.service';
@@ -26,6 +27,45 @@ import {
   parseDisplayDate,
 } from '../src/features/events/events.calendar';
 const id = '507f1f77bcf86cd799439011';
+
+test('Title back controls preserve explicit event context, role defaults and direct-entry fallbacks', () => {
+  const input = {
+    eventId: id,
+    managing: true,
+    view: 'teams',
+    organizer: false,
+    returnTo: null,
+  } satisfies Parameters<typeof eventBackHref>[0];
+  assert.equal(
+    eventBackHref({ ...input, eventId: undefined, managing: false }),
+    undefined,
+  );
+  assert.equal(eventBackHref({ ...input, eventId: undefined }), '/org');
+  assert.equal(eventBackHref({ ...input, managing: false }), '/events');
+  assert.equal(eventBackHref(input), '/org/events');
+  assert.equal(
+    eventBackHref({ ...input, organizer: true }),
+    `/org/events/${id}`,
+  );
+  const origin = '/org/events?q=pelada&status=ACTIVE&page=0&slide=1&scroll=80';
+  const detail = withReturn(`/org/events/${id}`, origin);
+  assert.equal(
+    eventBackHref({ ...input, organizer: true, returnTo: detail }),
+    detail,
+  );
+  assert.equal(
+    eventBackHref({ ...input, view: 'editTeams', returnTo: detail }),
+    withReturn(`/org/events/${id}/teams`, detail),
+  );
+  assert.equal(
+    eventBackHref({ ...input, returnTo: 'https://evil.invalid' }),
+    '/org/events',
+  );
+  assert.equal(
+    eventBackHref({ ...input, view: 'editTeams', returnTo: '//evil.invalid' }),
+    withReturn(`/org/events/${id}/teams`, '/org/events'),
+  );
+});
 test('RN93: clock derives from system time, catches up after background and stays zero; goal minute is elapsed with zero after expiration', () => {
   const started = '2026-10-16T12:00:00.000Z';
   const start = Date.parse(started);

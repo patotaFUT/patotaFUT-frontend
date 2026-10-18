@@ -41,6 +41,19 @@
   grid-column: 3;
   grid-row: 1;
 }
+.titleBack {
+  grid-column: 1;
+  grid-row: 1;
+}
+.titleBack:focus-visible {
+  outline: var(--focus-width) solid var(--color-primary);
+  /* The main region clips external overflow; keep the complete focus ring visible. */
+  outline-offset: calc(-1 * var(--focus-width));
+}
+.titleBack[aria-disabled='true'] {
+  opacity: var(--opacity-disabled);
+  cursor: wait;
+}
 .pageTitle {
   grid-column: 2;
   grid-row: 1;
