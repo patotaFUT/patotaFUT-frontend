@@ -182,6 +182,15 @@ export function MatchesScreen({
       title={title}
       managing
       organization={allowed}
+      backHref={
+        allowed
+          ? matchId
+            ? `/org/matches/${eventId}`
+            : eventId
+              ? '/org/matches'
+              : '/org'
+          : undefined
+      }
       busy={busy || auth.operation !== 'idle'}
       onLogout={() => void auth.logout()}
       titleAction={
@@ -481,18 +490,6 @@ export function MatchesScreen({
               )}
             </>
           )}
-          <Link
-            className={common.outline}
-            href={
-              matchId
-                ? `/org/matches/${eventId}`
-                : eventId
-                  ? '/org/matches'
-                  : '/org/events'
-            }
-          >
-            Voltar
-          </Link>
         </div>
       )}
       {dialog && (

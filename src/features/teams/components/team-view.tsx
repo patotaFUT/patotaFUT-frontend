@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import Link from 'next/link';
 import { FaUsers } from 'react-icons/fa';
 import { Modal } from '@/features/events/components/modal';
 import teamStyles from './team-view.module.css';
@@ -24,7 +23,6 @@ export function TeamView({
   waitingParticipants = [],
   capacity,
   onAllocate,
-  backHref,
 }: {
   teams: TeamDto[];
   editable: boolean;
@@ -35,7 +33,6 @@ export function TeamView({
   waitingParticipants?: import('@/features/events/events.contracts').ParticipantDto[];
   capacity?: number | null;
   onAllocate: (participantId: string, teamId: string) => Promise<boolean>;
-  backHref: string;
 }) {
   const [success, setSuccess] = useState<string>();
   const [waitingId, setWaitingId] = useState('');
@@ -171,17 +168,7 @@ export function TeamView({
             </Carousel>
           )}
           {editing && (
-            <div className={styles.actionRow}>
-              <Link
-                href={backHref}
-                className={styles.outline}
-                aria-disabled={busy}
-                onClick={(event) => {
-                  if (busy) event.preventDefault();
-                }}
-              >
-                {c.back}
-              </Link>
+            <div className={teamStyles.swapAction}>
               <Button
                 className={`${styles.solid} ${styles.dark}`}
                 disabled={busy || !editable || !valid}

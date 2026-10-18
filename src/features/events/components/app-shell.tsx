@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import Link from 'next/link';
-import { FiBarChart2, FiLogOut } from 'react-icons/fi';
+import { FiArrowLeft, FiBarChart2, FiLogOut } from 'react-icons/fi';
 import { HiHome, HiViewGridAdd } from 'react-icons/hi';
 import type { ReactNode } from 'react';
 import styles from './events.module.css';
@@ -15,6 +15,9 @@ export function AppShell({
   busy,
   section,
   titleAction,
+  titleClassName,
+  backHref,
+  backDisabled = false,
 }: {
   children: ReactNode;
   title: string;
@@ -22,6 +25,9 @@ export function AppShell({
   organization?: boolean;
   section?: string;
   titleAction?: ReactNode;
+  titleClassName?: string | undefined;
+  backHref?: string | undefined;
+  backDisabled?: boolean;
   onLogout: () => void;
   busy: boolean;
 }) {
@@ -52,7 +58,27 @@ export function AppShell({
         aria-label={title}
       >
         <div className={styles.titleRow}>
-          <h1 className={styles.pageTitle}>{title}</h1>
+          {backHref !== undefined && (
+            <Link
+              href={backHref}
+              aria-label="Voltar"
+              title="Voltar"
+              className={`${styles.iconButton} ${styles.titleBack}`}
+              aria-disabled={backDisabled || undefined}
+              onClick={(event) => {
+                if (backDisabled) event.preventDefault();
+              }}
+            >
+              <FiArrowLeft aria-hidden="true" />
+            </Link>
+          )}
+          <h1
+            className={[styles.pageTitle, titleClassName]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {title}
+          </h1>
           {titleAction}
         </div>
         {children}
@@ -74,7 +100,7 @@ export function AppShell({
           <span>Eventos</span>
         </Link>
         {organization && (
-          <Link href="/org/events" aria-current={managing ? 'page' : undefined}>
+          <Link href="/org" aria-current={managing ? 'page' : undefined}>
             <HiViewGridAdd aria-hidden="true" />
             <span>Gerenciar</span>
           </Link>

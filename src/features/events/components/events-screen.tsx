@@ -3,7 +3,7 @@ import { GlobalAccessLoading } from '@/features/auth/components/global-access-lo
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { safeReturn, withReturn } from '../navigation';
+import { eventBackHref, safeReturn, withReturn } from '../navigation';
 import { OwnTeam, ownGroup } from './own-team';
 import {
   FiSearch,
@@ -403,6 +403,18 @@ export function EventsScreen({
       title={title}
       managing={managing}
       organization={admin}
+      backHref={
+        allowed
+          ? eventBackHref({
+              eventId,
+              managing,
+              view,
+              organizer,
+              returnTo: params.get('returnTo'),
+            })
+          : undefined
+      }
+      backDisabled={view === 'editTeams' && busy}
       onLogout={() => void auth.logout()}
       busy={busy || auth.operation !== 'idle'}
       titleAction={
@@ -449,11 +461,6 @@ export function EventsScreen({
             )}
             {eventId === undefined ? (
               <>
-                {managing && admin && (
-                  <Link className={styles.outline} href="/org/matches">
-                    Súmulas
-                  </Link>
-                )}
                 <form
                   onSubmit={(event) => {
                     event.preventDefault();
@@ -682,10 +689,6 @@ export function EventsScreen({
                 ) : (
                   <TeamView
                     key={detail.event.id}
-                    backHref={withReturn(
-                      `/org/events/${detail.event.id}/teams`,
-                      safeReturn(params.get('returnTo'), '/org/events'),
-                    )}
                     editing={view === 'editTeams'}
                     onEdit={() =>
                       router.push(
@@ -743,21 +746,6 @@ export function EventsScreen({
                       <p className={styles.hint}>{c.futureMatches}</p>
                     </div>
                   )}
-                {view !== 'editTeams' && (
-                  <Link
-                    className={`${styles.outline} ${styles.backLink}`}
-                    href={safeReturn(
-                      params.get('returnTo'),
-                      managing
-                        ? view === 'teams' && organizer
-                          ? `/org/events/${eventId}`
-                          : '/org/events'
-                        : '/events',
-                    )}
-                  >
-                    {c.back}
-                  </Link>
-                )}
               </>
             ) : null}
             {dialog !== undefined && (

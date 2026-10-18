@@ -1,4 +1,6 @@
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import { OrganizationScreen } from '@/features/organization/components/organization-screen';
 export default function Page() {
-  redirect('/org/events');
+  return <OrganizationScreen />;
 }
+export const metadata: Metadata = { title: 'Gerenciamento' };
