@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: { default: 'PatotaFUT', template: '%s | PatotaFUT' },
   description: authContent.metadataDescription,
   icons: { icon: brandPresentation.logoPath },
+  verification: {
+    google: 'K4TBk2gkLRNKx1h0VRldKmYSbX658MXasz7a2kxLI6M',
+  },
 };
 
 export default function RootLayout({
