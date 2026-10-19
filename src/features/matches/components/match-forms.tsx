@@ -5,6 +5,7 @@ import type { Match, Goal } from '../matches.service';
 import { defaultGoalMinute } from '../match-clock';
 import common from '@/features/events/components/events.module.css';
 import styles from './matches.module.css';
+import { isCompleteTeam } from '@/features/teams/team-formation';
 
 export function CreateMatchForm({
   detail,
@@ -20,9 +21,8 @@ export function CreateMatchForm({
   const [a, setA] = useState(''),
     [b, setB] = useState(''),
     [duration, setDuration] = useState('7');
-  const teams = detail.teams.filter(
-    (t) =>
-      t.type === 'TEAM' && t.members.length === detail.event.playersPerTeam,
+  const teams = detail.teams.filter((t) =>
+    isCompleteTeam(t, detail.event.playersPerTeam),
   );
   return (
     <form

@@ -1,4 +1,6 @@
 'use client';
+import { PreferencesPanel } from '@/features/account/components/preferences-panel';
+import { MembersPanel } from '@/features/account/components/members-panel';
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -62,7 +64,7 @@ export function OrganizationScreen({
       titleClassName={page === 'home' ? styles.title : undefined}
       backHref={role !== undefined && page !== 'home' ? '/org' : undefined}
       managing={true}
-      organization={role !== undefined && role !== 'PLAYER'}
+      organization={role !== undefined}
       onLogout={() => void auth.logout()}
       busy={busy}
     >
@@ -80,10 +82,16 @@ export function OrganizationScreen({
         <div className={styles.placeholder}>
           <p role="status">Você não tem permissão para acessar esta área.</p>
         </div>
-      ) : page !== 'home' ? (
-        <section className={styles.placeholder} aria-label={title}>
-          <p role="status">Em breve</p>
-        </section>
+      ) : page === 'preferences' && auth.session.status === 'authenticated' ? (
+        <PreferencesPanel
+          user={auth.session.user}
+          refresh={() => auth.restore(false, true)}
+        />
+      ) : page === 'members' && auth.session.status === 'authenticated' ? (
+        <MembersPanel
+          ownId={auth.session.user.id}
+          refresh={() => auth.restore(false, true)}
+        />
       ) : (
         <nav className={styles.hub} aria-label="Acessos de gerenciamento">
           <ul className={styles.grid}>

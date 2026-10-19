@@ -21,7 +21,7 @@ interface AuthFieldProps {
     | 'new-password'
     | 'current-password'
     | 'one-time-code';
-  inputMode?: 'numeric';
+  inputMode?: 'numeric' | undefined;
   maxLength?: number;
   value: string;
   disabled: boolean;

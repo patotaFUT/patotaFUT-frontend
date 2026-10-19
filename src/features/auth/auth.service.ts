@@ -151,6 +151,9 @@ export class AuthClient {
       });
     }
     return this.client.post<unknown>(path, body, {
+      ...(path === '/account/preferences/email/request'
+        ? { timeout: 30_000 }
+        : {}),
       ...accessConfig,
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
     });
@@ -371,6 +374,22 @@ export class AuthClient {
         }
         this.user(refresh);
         response = await send();
+      }
+      if (
+        response.status >= 200 &&
+        response.status < 300 &&
+        body !== undefined
+      ) {
+        if (path === '/account/preferences/names')
+          this.coordinator.notify('session-changed');
+        if (
+          [
+            '/account/preferences/password',
+            '/account/preferences/email/confirm',
+            '/account/preferences/delete',
+          ].includes(path)
+        )
+          this.coordinator.notify('session-ended');
       }
       return response;
     });

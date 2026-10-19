@@ -1,5 +1,13 @@
 # Central de gerenciamento — 18/10/2026
 
+Atualização posterior nesta data: Preferências agora é funcional e Integrantes
+possui listagem/exclusão mínima para Organizador. Jogadores também veem a entrada
+da central no menu. Os trechos abaixo sobre placeholders, menu oculto e ausência
+de endpoints descrevem a entrega anterior e estão superados por
+[Preferências e exclusão](../../docs/implementacao-preferencias.md).
+Os testes de navegação foram ajustados aos novos destinos; a execução visual desta
+extensão foi bloqueada pelo ambiente e não herda os resultados visuais anteriores.
+
 Fonte: pedido atual de implementação de `/org`, AGENTS.md, livros de regras e
 modelos e protótipo de alta fidelidade, página 15. Branch `feat/organization-hub`;
 nenhum merge, push ou deploy nesta etapa. Backend e arquivos de referência intactos.

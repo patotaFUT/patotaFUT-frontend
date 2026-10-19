@@ -3,6 +3,7 @@ export const accessRequestTimeout = 60_000;
 export const accessRestoreTimeout = 75_000;
 
 export function proxyTimeout(segments: readonly string[]): number {
+  if (segments.join('/') === 'account/preferences/email/request') return 30_000;
   return segments.length === 2 &&
     segments[0] === 'auth' &&
     ['me', 'csrf', 'refresh'].includes(segments[1] ?? '')

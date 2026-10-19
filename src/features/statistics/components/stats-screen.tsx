@@ -87,11 +87,7 @@ export function StatsScreen() {
       title="Estatísticas dos Jogadores"
       section="stats"
       managing={false}
-      organization={
-        authenticated &&
-        auth.session.status === 'authenticated' &&
-        auth.session.user.role !== 'PLAYER'
-      }
+      organization={authenticated && auth.session.status === 'authenticated'}
       onLogout={() => void auth.logout()}
       busy={auth.operation !== 'idle'}
     >

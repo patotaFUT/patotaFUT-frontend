@@ -1,5 +1,12 @@
 # PatotaFUT — frontend
 
+Preferências e exclusão (18/10/2026): `/org/preferences` permite editar a própria
+conta; a central fica acessível aos três perfis. `/org/members` fornece somente
+listagem e exclusão autorizada ao Organizador. Sessão continua em `/auth/me`, sem
+credenciais no storage. Testes de contratos em `npm test`; roteiro visual novo em
+`npm run test:accounts:browser` (a execução Chromium foi bloqueada neste ambiente).
+[Implementação, contratos e limitações](../docs/implementacao-preferencias.md).
+
 O frontend contém **login, cadastro local, recuperação de senha, eventos e times**, com suas integrações.
 Login fica em `/` e “Registre-se” em `/register`, com navegação entre as duas telas.
 O cadastro é uma extensão autorizada, derivada visualmente do login; não faz parte

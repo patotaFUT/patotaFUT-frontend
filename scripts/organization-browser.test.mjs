@@ -149,6 +149,12 @@ try {
             status: 401,
             json: { error: 'Fixture sem sessão' },
           });
+        if (path === '/api/account/preferences')
+          return route.fulfill({
+            json: { googleLinked: false, localCredentials: true },
+          });
+        if (path === '/api/account/members')
+          return route.fulfill({ json: { items: [], nextCursor: null } });
         if (path === '/api/events')
           return route.fulfill({ json: { items: [event], nextCursor: null } });
         if (path === `/api/events/${eventId}`)
@@ -227,14 +233,18 @@ try {
         const focused = page.locator(':focus');
         await expect(focused).toHaveCSS('outline-style', 'solid');
         await expect(focused).toHaveCSS('outline-width', '2px');
-        // Keyboard opens the real placeholder route and returns to the canonical central.
+        // Keyboard opens preferences and returns to the canonical central.
         await hub
           .getByRole('link', { name: 'Preferências', exact: true })
           .focus();
         await page.keyboard.press('Enter');
         await expect(page).toHaveURL(`${base}/org/preferences`);
-        await expect(main.getByText('Em breve', { exact: true })).toBeVisible();
-        await expect(main.getByRole('textbox')).toHaveCount(0);
+        await expect(
+          main.getByRole('heading', { name: 'Dados pessoais' }),
+        ).toBeVisible();
+        await expect(
+          main.getByRole('textbox', { name: 'Nome', exact: true }),
+        ).toBeVisible();
         await checkLayout(page);
         await main.getByRole('link', { name: 'Voltar', exact: true }).click();
         await expect(hub).toBeVisible();
@@ -244,7 +254,7 @@ try {
             .click();
           await expect(page).toHaveURL(`${base}/org/members`);
           await expect(
-            main.getByText('Em breve', { exact: true }),
+            main.getByRole('heading', { name: 'Integrantes', exact: true }),
           ).toBeVisible();
           await capture(
             page,
@@ -314,7 +324,7 @@ try {
         } else {
           await expect(
             menu.getByRole('link', { name: 'Gerenciar' }),
-          ).toHaveCount(0);
+          ).toHaveCount(1);
           for (const path of ['/org/events', '/org/matches']) {
             await page.goto(base + path, { waitUntil: 'domcontentloaded' });
             await expect(main.getByText(/permissão/i)).toBeVisible();
@@ -383,12 +393,14 @@ try {
           1,
         );
         assert.ok(
-          calls.every(
-            (call) =>
-              !call.path.includes('/members') &&
-              !call.path.includes('/preferences'),
-          ),
+          calls
+            .filter((call) => call.path.startsWith('/api/account/'))
+            .every((call) => call.method === 'GET'),
         );
+        if (role !== 'ORGANIZER')
+          assert.ok(
+            !calls.some((call) => call.path.startsWith('/api/account/members')),
+          );
         // Existing access loading/error/retry, without rendering cards before authentication.
         authenticated = true;
         failSession = true;

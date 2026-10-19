@@ -9,6 +9,7 @@ import type { TeamDto } from '@/features/events/events.contracts';
 import { eventContent as c } from '@/features/events/events.content';
 import { Carousel } from '@/features/events/components/carousel';
 import styles from '@/features/events/components/events.module.css';
+import { isCompleteTeam } from '../team-formation';
 export interface SwapSelection {
   teamId: string;
   participantId: string;
@@ -37,7 +38,8 @@ export function TeamView({
   const [success, setSuccess] = useState<string>();
   const [waitingId, setWaitingId] = useState('');
   const [destination, setDestination] = useState('');
-  const [viewing, setViewing] = useState<TeamDto>();
+  const [viewingId, setViewingId] = useState<string>();
+  const viewing = teams.find((team) => team.id === viewingId);
   const [selected, setSelected] = useState<SwapSelection[]>([]);
   function choose(teamId: string, participantId: string) {
     setSuccess(undefined);
@@ -101,8 +103,11 @@ export function TeamView({
               <h2>{team.name}</h2>
               <p>{team.members.length} jogadores</p>
             </div>
-            <span className={teamStyles.badge} data-type={team.type}>
-              {team.type === 'RESERVES' ? 'Incompleto' : 'Completo'}
+            <span
+              className={teamStyles.badge}
+              data-type={isCompleteTeam(team, capacity) ? 'TEAM' : 'RESERVES'}
+            >
+              {isCompleteTeam(team, capacity) ? 'Completo' : 'Incompleto'}
             </span>
           </div>
           {members(team, true)}
@@ -126,7 +131,7 @@ export function TeamView({
             <Button
               className={`${styles.solid} ${styles.dark}`}
               disabled={busy}
-              onClick={() => setViewing(team)}
+              onClick={() => setViewingId(team.id)}
             >
               {c.players}
             </Button>
@@ -268,7 +273,7 @@ export function TeamView({
         <Modal
           title={viewing.name}
           busy={busy}
-          onClose={() => setViewing(undefined)}
+          onClose={() => setViewingId(undefined)}
         >
           {members(viewing, false)}
         </Modal>

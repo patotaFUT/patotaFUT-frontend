@@ -1,0 +1,122 @@
+.page {
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  scroll-padding-block: var(--space-lg);
+  padding-block: calc(var(--space-lg) + env(safe-area-inset-top, 0px))
+    calc(var(--space-xl) + env(safe-area-inset-bottom, 0px));
+  padding-inline: max(var(--page-gutter), env(safe-area-inset-left, 0px))
+    max(var(--page-gutter), env(safe-area-inset-right, 0px));
+}
+.content {
+  max-width: 72ch;
+  min-width: 0;
+  margin-inline: auto;
+  overflow-wrap: anywhere;
+}
+.header,
+.article,
+.article section,
+.footer {
+  display: grid;
+  gap: var(--space-base);
+}
+.header {
+  margin-block: var(--space-lg);
+}
+.header h1 {
+  font-size: var(--font-title);
+  line-height: var(--line-heading);
+}
+.logo {
+  width: var(--event-logo-width);
+  height: auto;
+}
+.updated {
+  color: var(--color-secondary);
+  font-size: var(--font-small);
+}
+.index {
+  margin-block: var(--space-lg);
+  padding: var(--space-base);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.content h2 {
+  font-size: var(--font-heading);
+  line-height: var(--line-heading);
+  margin: 0;
+}
+.content ul {
+  margin: 0;
+  padding-left: var(--space-lg);
+  display: grid;
+  gap: var(--space-md);
+}
+.index ul {
+  margin-top: var(--space-base);
+}
+.article {
+  gap: var(--space-xl);
+}
+.article section {
+  scroll-margin-block: var(--space-lg);
+}
+.content a,
+.links a {
+  color: var(--color-primary);
+  text-underline-offset: var(--space-xs);
+}
+.content a:focus-visible,
+.links a:focus-visible,
+.page:focus-visible {
+  outline: var(--focus-width) solid var(--color-primary);
+  outline-offset: var(--focus-offset);
+  background: var(--color-input-focus-background);
+}
+.page:focus-visible {
+  outline-offset: calc(-1 * var(--focus-width));
+}
+.back {
+  display: inline-flex;
+  gap: var(--space-sm);
+  align-items: center;
+  min-height: var(--touch-target);
+}
+.back svg {
+  flex-shrink: 0;
+}
+.footer {
+  margin-top: var(--space-xl);
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--space-lg);
+}
+.footer > a {
+  width: fit-content;
+  min-height: var(--touch-target);
+  display: inline-flex;
+  align-items: center;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: var(--space-base);
+  row-gap: var(--space-xs);
+  margin-block: var(--space-lg) var(--space-sm);
+  font-size: var(--font-small);
+  min-width: 0;
+}
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch-target);
+  overflow-wrap: anywhere;
+}
+.footer .links {
+  justify-content: flex-start;
+  margin-block: 0;
+}

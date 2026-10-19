@@ -181,7 +181,7 @@ export function MatchesScreen({
     <AppShell
       title={title}
       managing
-      organization={allowed}
+      organization={auth.session.status === 'authenticated'}
       backHref={
         allowed
           ? matchId

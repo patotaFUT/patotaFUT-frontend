@@ -83,7 +83,7 @@ export async function forwardApi(
     );
   }
   if (
-    !['auth', 'events', 'statistics'].includes(segments[0] ?? '') ||
+    !['auth', 'events', 'statistics', 'account'].includes(segments[0] ?? '') ||
     segments.some((segment) => !/^[a-zA-Z0-9_-]+$/.test(segment))
   )
     return failure(404, 'Recurso não encontrado.');

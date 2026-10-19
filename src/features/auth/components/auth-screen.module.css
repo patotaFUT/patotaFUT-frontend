@@ -6,6 +6,12 @@
   margin: var(--separator-gap) var(--space-lg)
     var(--auth-separator-bottom, var(--space-lg));
 }
+.about {
+  margin-top: var(--space-lg);
+  text-align: center;
+  color: var(--color-secondary);
+  font-size: var(--font-small);
+}
 .authSeparator::before,
 .authSeparator::after {
   content: '';

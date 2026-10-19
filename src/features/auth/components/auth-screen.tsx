@@ -1,5 +1,6 @@
 'use client';
 import { GlobalAccessLoading } from '@/features/auth/components/global-access-loading';
+import { LegalLinks } from '@/features/legal/components/legal-links';
 
 import { FiCheckCircle, FiLogOut } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
@@ -10,12 +11,25 @@ import { GoogleButton } from './google-button';
 import { LoginForm } from './login-form';
 import { RegisterForm } from './register-form';
 import styles from './auth-screen.module.css';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
   const auth = useAuth();
   const router = useRouter();
+  const [accountNotice, setAccountNotice] = useState('');
+  useEffect(() => {
+    const notice = new URLSearchParams(window.location.search).get('notice');
+    setAccountNotice(
+      notice === 'email-changed'
+        ? 'E-mail alterado. Entre com o novo endereço. A notificação ao endereço anterior está na fila de envio.'
+        : notice === 'password-changed'
+          ? 'Senha alterada. Entre com sua nova senha.'
+          : notice === 'account-deleted'
+            ? 'Conta excluída.'
+            : '',
+    );
+  }, []);
   useEffect(() => {
     if (auth.session.status === 'authenticated') router.replace('/events');
   }, [auth.session.status, router]);
@@ -36,6 +50,11 @@ export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
         session={auth.session}
         onRetry={() => void auth.restore()}
       />
+      {accountNotice && (
+        <p className={styles.notice} role="status">
+          {accountNotice}
+        </p>
+      )}
       {auth.session.status === 'checking' && (
         <p className={styles.notice} role="status">
           {authContent.checking}
@@ -111,6 +130,11 @@ export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
           <GoogleButton disabled={disabled} onCredential={auth.google} />
         </>
       ) : null}
+      <p className={styles.about}>
+        PatotaFUT organiza o futebol do grupo: eventos, presenças, times,
+        partidas e estatísticas de gols e assistências.
+      </p>
+      <LegalLinks />
     </AuthLayout>
   );
 }

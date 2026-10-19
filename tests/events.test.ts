@@ -22,6 +22,8 @@ import {
 } from '../src/features/events/events.contracts';
 import { formationError } from '../src/features/events/events.validation';
 import { validateEvent } from '../src/features/events/events.validation';
+import { isCompleteTeam } from '../src/features/teams/team-formation';
+import type { TeamDto } from '../src/features/events/events.contracts';
 import {
   formatEventDate,
   parseDisplayDate,
@@ -468,4 +470,74 @@ test('Own participant identity: optional legacy response, strict ID and session-
     parseDetail({ event: legacy, teams: [] }).event.ownParticipantId,
     null,
   );
+});
+
+test('RN85/§30: actual formation drives complete badges, match selection, totals and cancellation response', async () => {
+  const member = {
+    id,
+    name: 'Remaining',
+    participantType: 'USER',
+    allocated: true,
+    allocation: 'RESERVES',
+  } satisfies TeamDto['members'][number];
+  const team = {
+    id,
+    name: 'Time 1',
+    type: 'TEAM',
+    members: [member],
+  } satisfies TeamDto;
+  assert.equal(isCompleteTeam(team, 2), false);
+  assert.equal(
+    isCompleteTeam(
+      {
+        ...team,
+        members: [member, { ...member, id: '507f1f77bcf86cd799439012' }],
+      },
+      2,
+    ),
+    true,
+  );
+  assert.equal(isCompleteTeam({ ...team, type: 'RESERVES' }, 1), false);
+  assert.equal(isCompleteTeam(team, null), false);
+  const canonical = {
+    event: {
+      ...event,
+      confirmedCount: 2,
+      waitingCount: 1,
+      playersPerTeam: 2,
+      formationExists: true,
+      revision: 2,
+    },
+    teams: [{ ...team, name: 'Reservas', type: 'RESERVES' }],
+    waitingParticipants: [
+      {
+        ...member,
+        id: '507f1f77bcf86cd799439013',
+        allocated: false,
+        allocation: 'WAITING',
+      },
+    ],
+  };
+  const client = new EventsClient(async (path, body) => {
+    assert.equal(path, `/events/${id}/participants/${id}/cancel`);
+    assert.deepEqual(body, { revision: 1 });
+    return {
+      status: 200,
+      data: canonical,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: new axios.AxiosHeaders() },
+    };
+  });
+  const result = await client.action(id, `participants/${id}/cancel`, 1);
+  assert.equal(result.event.confirmedCount, 2);
+  assert.equal(result.event.waitingCount, 1);
+  assert.equal(result.teams.length, 1);
+  assert.equal(result.teams[0]?.name, 'Reservas');
+  assert.equal(
+    result.teams.filter((t) => isCompleteTeam(t, result.event.playersPerTeam))
+      .length,
+    0,
+  );
+  assert.equal(result.waitingParticipants.length, 1);
 });

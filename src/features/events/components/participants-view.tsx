@@ -9,6 +9,7 @@ import styles from './events.module.css';
 export function ParticipantsView({
   page,
   organizer,
+  canRemove,
   active,
   busy,
   onMore,
@@ -17,6 +18,7 @@ export function ParticipantsView({
 }: {
   page: ParticipantPage | undefined;
   organizer: boolean;
+  canRemove: boolean;
   active: boolean;
   busy: boolean;
   onMore: () => void;
@@ -49,29 +51,23 @@ export function ParticipantsView({
                           ? ' · Alocado'
                           : ` · ${c.confirmedLabel}`}
                 </span>
-                {organizer && active && (
-                  <button
-                    type="button"
-                    disabled={busy || p.allocated}
-                    aria-describedby={
-                      p.allocated ? 'allocated-participants-note' : undefined
-                    }
-                    title={p.allocated ? c.removeAllocated : undefined}
-                    className={`${styles.iconButton} ${styles.removeButton}`}
-                    aria-label={`Cancelar presença de ${p.name}`}
-                    onClick={() => onRemove(p.id)}
-                  >
-                    <FiTrash2 aria-hidden="true" />
-                  </button>
-                )}
+                {canRemove &&
+                  active &&
+                  (organizer ||
+                    (p.allocated && p.participantType === 'USER')) && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className={`${styles.iconButton} ${styles.removeButton}`}
+                      aria-label={`Cancelar presença de ${p.name}`}
+                      onClick={() => onRemove(p.id)}
+                    >
+                      <FiTrash2 aria-hidden="true" />
+                    </button>
+                  )}
               </li>
             ))}
           </ul>
-          {page.items.some((p) => p.allocated) && (
-            <p id="allocated-participants-note" className={styles.hint}>
-              {c.removeAllocated}
-            </p>
-          )}
           {page.items.length === 0 && <p>Nenhuma presença confirmada.</p>}
           {page.nextCursor !== null && (
             <button

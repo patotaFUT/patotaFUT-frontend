@@ -126,6 +126,10 @@ try {
           };
         else if (path === '/api/auth/csrf')
           body = { csrfToken: `${'a'.repeat(64)}.${'b'.repeat(64)}` };
+        else if (path === '/api/account/preferences')
+          body = { googleLinked: false, localCredentials: true };
+        else if (path === '/api/account/members')
+          body = { items: [], nextCursor: null };
         else if (path === '/api/events')
           body = { items: [event], nextCursor: null };
         else if (path === `/api/events/${eventId}`)

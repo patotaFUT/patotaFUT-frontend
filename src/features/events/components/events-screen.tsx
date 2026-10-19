@@ -402,7 +402,7 @@ export function EventsScreen({
     <AppShell
       title={title}
       managing={managing}
-      organization={admin}
+      organization={auth.session.status === 'authenticated'}
       backHref={
         allowed
           ? eventBackHref({
@@ -829,6 +829,7 @@ export function EventsScreen({
                 )}
                 {dialog === 'participants' && selected !== undefined && (
                   <ParticipantsView
+                    canRemove={admin}
                     page={participants}
                     organizer={organizer}
                     active={selected.status === 'ACTIVE'}
@@ -871,7 +872,11 @@ export function EventsScreen({
                   selected !== undefined &&
                   removeId !== undefined && (
                     <>
-                      <p>Cancelar a presença deste participante no evento?</p>
+                      <p>
+                        Remover este participante da formação e cancelar sua
+                        presença no evento? Uma partida em andamento com a
+                        pessoa deve ser finalizada antes.
+                      </p>
                       <Button
                         disabled={busy}
                         className={`${styles.solid} ${styles.danger}`}
