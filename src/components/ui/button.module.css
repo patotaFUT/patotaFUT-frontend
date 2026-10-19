@@ -1,4 +1,4 @@
-.primary {
+.button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,11 +8,31 @@
   padding: var(--space-md) var(--space-lg);
   border: 0;
   border-radius: var(--radius-button);
-  background: var(--color-primary-strong);
   color: var(--color-surface);
   font-weight: var(--weight-semibold);
   box-shadow: var(--shadow-none);
 }
+.primary {
+  background: var(--color-primary-strong);
+}
+.icon {
+  width: var(--touch-target);
+  min-height: var(--touch-target);
+  height: var(--touch-target);
+  padding: 0;
+  flex: none;
+  border-radius: var(--radius-avatar);
+}
 .primary:hover:not(:disabled) {
   background: var(--color-primary);
+}
+.danger {
+  background: var(--color-error);
+}
+.danger:hover:not(:disabled) {
+  background: var(--color-error);
+  filter: brightness(0.9);
+}
+.danger:focus-visible {
+  outline-color: var(--color-error);
 }

@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   parseProfile,
   parseMembers,
+  parseMember,
 } from '../src/features/account/account.contracts';
 import { proxyTimeout } from '../src/features/auth/access-timing';
 test('RN116: preferences capability requires explicit server booleans', () => {
@@ -24,7 +25,6 @@ test('RN60: member contracts validate listing and pagination without accepting m
     id: 'fixture',
     firstName: 'Nome',
     lastName: 'Fixture',
-    email: 'fixture@example.invalid',
     role: 'PLAYER',
   };
   assert.deepEqual(parseMembers({ items: [item], nextCursor: null }), {
@@ -36,6 +36,11 @@ test('RN60: member contracts validate listing and pagination without accepting m
     { items: 'wrong', nextCursor: null },
     { items: [{}], nextCursor: null },
     { items: [item], nextCursor: 1 },
+    {
+      items: [{ ...item, email: 'fixture@example.invalid' }],
+      nextCursor: null,
+    },
+    { items: [{ ...item, role: 'OWNER' }], nextCursor: null },
   ])
     assert.throws(() => parseMembers(bad));
 });
@@ -45,4 +50,16 @@ test('RN114: confirmation-code delivery budget covers both Gmail operations; oth
     30000,
   );
   assert.equal(proxyTimeout(['account', 'preferences', 'delete']), 15000);
+});
+
+test('RN57/section31: each role is accepted with names only; identity and credential fields are refused', () => {
+  const base = { id: 'fixture', firstName: 'Nome', lastName: 'Sobrenome' };
+  for (const role of ['PLAYER', 'ADMIN', 'ORGANIZER'])
+    assert.deepEqual(parseMember({ ...base, role }), { ...base, role });
+  for (const extra of [
+    { email: 'fixture@example.invalid' },
+    { passwordHash: 'fixture' },
+    { role: 'ROOT' },
+  ])
+    assert.throws(() => parseMember({ ...base, role: 'PLAYER', ...extra }));
 });

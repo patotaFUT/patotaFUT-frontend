@@ -16,6 +16,7 @@
     "test:statistics:browser": "node scripts/statistics-browser.test.mjs",
     "test:organization:browser": "node scripts/organization-browser.test.mjs",
     "test:accounts:browser": "node scripts/accounts-browser.test.mjs",
+    "test:member-roles:browser": "node scripts/member-roles-browser.test.mjs",
     "test:back-navigation:browser": "node scripts/back-navigation.test.mjs",
     "test:legal:http": "node scripts/legal-pages.test.mjs",
     "test:legal:browser": "node scripts/legal-pages-browser.test.mjs"

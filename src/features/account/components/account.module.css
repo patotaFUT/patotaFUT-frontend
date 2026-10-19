@@ -34,14 +34,6 @@
 .actions > * {
   min-height: 2.75rem;
 }
-.danger {
-  background: var(--color-error);
-  color: var(--color-surface);
-  border: var(--border-width) solid var(--color-error);
-}
-.danger:hover:not(:disabled) {
-  background: var(--color-error);
-}
 .notice {
   overflow-wrap: anywhere;
 }
@@ -63,4 +55,29 @@
 .member span {
   overflow-wrap: anywhere;
   min-width: 0;
+}
+.member > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.memberControls {
+  display: grid;
+  gap: var(--space-sm);
+  width: min(100%, 18rem);
+}
+.roleField {
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-input);
+  padding-inline: var(--space-base);
+}
+.roleField:focus-within {
+  background: var(--color-input-focus-background);
+}
+.roleField select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--touch-target);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
 }

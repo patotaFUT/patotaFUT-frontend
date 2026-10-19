@@ -1,3 +1,5 @@
+import type { UserRole } from '../auth/auth.contracts';
+
 export interface AccountProfile {
   googleLinked: boolean;
   localCredentials: boolean;
@@ -6,8 +8,7 @@ export interface Member {
   id: string;
   firstName: string;
   lastName: string;
-  email: string;
-  role: string;
+  role: UserRole;
 }
 export interface MemberPage {
   items: Member[];
@@ -38,18 +39,24 @@ export function parseMembers(value: unknown): MemberPage {
     (data.nextCursor !== null && typeof data.nextCursor !== 'string')
   )
     throw new Error('Resposta inválida do servidor.');
-  const items = data.items.map((item) => {
-    const row = accountRecord(item);
-    const { id, firstName, lastName, email, role } = row;
-    if (
-      typeof id !== 'string' ||
-      typeof firstName !== 'string' ||
-      typeof lastName !== 'string' ||
-      typeof email !== 'string' ||
-      typeof role !== 'string'
-    )
-      throw new Error('Resposta inválida do servidor.');
-    return { id, firstName, lastName, email, role };
-  });
+  const items = data.items.map(parseMember);
   return { items, nextCursor: data.nextCursor };
+}
+export function parseMember(item: unknown): Member {
+  const row = accountRecord(item);
+  const { id, firstName, lastName, role } = row;
+  if (
+    typeof id !== 'string' ||
+    typeof firstName !== 'string' ||
+    typeof lastName !== 'string' ||
+    !isMemberRole(role) ||
+    Object.keys(row).some(
+      (key) => !['id', 'firstName', 'lastName', 'role'].includes(key),
+    )
+  )
+    throw new Error('Resposta inválida do servidor.');
+  return { id, firstName, lastName, role };
+}
+export function isMemberRole(value: unknown): value is UserRole {
+  return value === 'PLAYER' || value === 'ADMIN' || value === 'ORGANIZER';
 }

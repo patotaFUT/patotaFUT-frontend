@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -444,8 +445,9 @@ export function MatchesScreen({
                         >
                           Editar gol
                         </button>
-                        <button
-                          className={common.outline}
+                        <Button
+                          variant="danger"
+                          className={common.control}
                           disabled={busy}
                           onClick={() =>
                             void run(async () =>
@@ -460,7 +462,7 @@ export function MatchesScreen({
                           }
                         >
                           Excluir gol
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </section>
@@ -477,8 +479,9 @@ export function MatchesScreen({
                 </>
               )}
               {!running && (
-                <button
-                  className={`${common.solid} ${common.danger} ${styles.action}`}
+                <Button
+                  variant="danger"
+                  className={`${common.control} ${styles.action}`}
                   disabled={busy}
                   onClick={() => {
                     setError(undefined);
@@ -486,7 +489,7 @@ export function MatchesScreen({
                   }}
                 >
                   Excluir súmula pendente
-                </button>
+                </Button>
               )}
             </>
           )}
@@ -561,8 +564,13 @@ export function MatchesScreen({
                   : 'Tem certeza de que deseja excluir esta súmula pendente?'}
               </p>
               {error && <p role="alert">{error}</p>}
-              <button
-                className={`${common.solid} ${common.dark}`}
+              <Button
+                variant={dialog.kind === 'delete' ? 'danger' : 'primary'}
+                className={
+                  dialog.kind === 'delete'
+                    ? common.control
+                    : `${common.solid} ${common.dark}`
+                }
                 disabled={busy}
                 onClick={() =>
                   action(
@@ -576,7 +584,7 @@ export function MatchesScreen({
                   : dialog.kind === 'finish'
                     ? 'Confirmar finalização'
                     : 'Confirmar exclusão'}
-              </button>
+              </Button>
             </div>
           )}
           {dialog.kind === 'create' && <p>{eventName}</p>}

@@ -37,7 +37,12 @@ export function EventCard({
       disabled={
         busy || (event.ownPresence === 'CONFIRMED' && event.ownAllocated)
       }
-      className={`${styles.solid} ${event.ownPresence === 'CONFIRMED' ? styles.danger : styles.dark}`}
+      variant={event.ownPresence === 'CONFIRMED' ? 'danger' : 'primary'}
+      className={
+        event.ownPresence === 'CONFIRMED'
+          ? styles.control
+          : `${styles.solid} ${styles.dark}`
+      }
       onClick={onPresence}
     >
       {event.ownPresence === 'CONFIRMED' ? c.cancelPresence : c.presence}

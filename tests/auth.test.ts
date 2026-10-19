@@ -44,6 +44,80 @@ const user = {
   role: 'PLAYER',
 };
 
+test('RN07/RN57: role change notifies other sessions and /me restores the new role without replacing credentials; conflicts never replay', async () => {
+  let role = 'PLAYER',
+    status = 200;
+  const calls: string[] = [],
+    notices: SessionNotice[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    const path = config.url ?? '';
+    calls.push(path);
+    if (path === '/auth/csrf')
+      return {
+        status: 200,
+        statusText: '',
+        headers: {},
+        config,
+        data: { csrfToken: `${'a'.repeat(64)}.${'b'.repeat(64)}` },
+      };
+    if (path.endsWith('/role')) {
+      if (status === 200) role = 'ADMIN';
+      return {
+        status,
+        statusText: '',
+        headers: {},
+        config,
+        data: {
+          member: {
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            role,
+          },
+        },
+      };
+    }
+    return {
+      status: 200,
+      statusText: '',
+      headers: {},
+      config,
+      data: { user: { ...user, role } },
+    };
+  };
+  const client = new AuthClient(
+    axios.create({ adapter }),
+    {
+      exclusive: (action) => action(),
+      notify: (notice) => notices.push(notice),
+      subscribe: () => () => undefined,
+    },
+    '/api',
+  );
+  await client.protectedRequest(`/account/members/${user.id}/role`, {
+    confirmed: true,
+    role: 'ADMIN',
+    expectedRole: 'PLAYER',
+  });
+  assert.deepEqual(notices, ['session-changed']);
+  const restored = await client.restore(false);
+  assert.equal(restored.status, 'authenticated');
+  if (restored.status === 'authenticated')
+    assert.equal(restored.user.role, 'ADMIN');
+  status = 409;
+  const before = calls.length;
+  await client.protectedRequest(`/account/members/${user.id}/role`, {
+    confirmed: true,
+    role: 'ORGANIZER',
+    expectedRole: 'PLAYER',
+  });
+  assert.deepEqual(calls.slice(before), [
+    '/auth/csrf',
+    `/account/members/${user.id}/role`,
+  ]);
+  assert.deepEqual(notices, ['session-changed']);
+});
+
 test('Access: slow wake-up succeeds after 20s; ordinary operations retain their local timeout', async (context) => {
   context.mock.timers.enable({ apis: ['setTimeout'] });
   const calls: { path: string | undefined; timeout: number | undefined }[] = [];

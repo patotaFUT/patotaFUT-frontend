@@ -376,7 +376,7 @@ export function PreferencesPanel({
         <h2 id="delete-heading">Excluir conta</h2>
         <p>Remova sua conta e seus dados pessoais de forma definitiva.</p>
         <Button
-          className={styles.danger}
+          variant="danger"
           disabled={busy}
           onClick={() => {
             setNotices((previous) => ({
@@ -407,7 +407,7 @@ export function PreferencesPanel({
               Cancelar
             </Button>
             <Button
-              className={styles.danger}
+              variant="danger"
               disabled={busy}
               onClick={() =>
                 void run('delete', async () => {

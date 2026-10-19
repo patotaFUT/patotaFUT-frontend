@@ -80,11 +80,14 @@ export function useAuth() {
         void restore(true, true);
     };
     document.addEventListener('visibilitychange', onVisible);
+    // Reuse /auth/me to reflect role changes from another device while this tab stays open.
+    const permissionProbe = setInterval(onVisible, 30000);
     return (): void => {
       mounted.current = false;
       revision.current++;
       unsubscribe?.();
       document.removeEventListener('visibilitychange', onVisible);
+      clearInterval(permissionProbe);
     };
   }, [restore]);
 

@@ -116,7 +116,6 @@ async function fixture(viewport, role, googleLinked = false) {
             id: '507f1f77bcf86cd799439012',
             firstName: 'Alvo',
             lastName: 'Fixture',
-            email: 'target@example.invalid',
             role: 'PLAYER',
           },
         ],
@@ -263,7 +262,10 @@ try {
     if (role === 'ORGANIZER') {
       await expect(f.page.getByText('Alvo Fixture')).toBeVisible();
       await f.page
-        .getByRole('button', { name: 'Excluir conta', exact: true })
+        .getByRole('button', {
+          name: 'Excluir conta de Alvo Fixture',
+          exact: true,
+        })
         .click();
       await expect(f.page.getByRole('dialog')).toContainText('Alvo Fixture');
       await f.page

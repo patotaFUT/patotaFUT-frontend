@@ -1,7 +1,7 @@
 'use client';
 import { PreferencesPanel } from '@/features/account/components/preferences-panel';
 import { MembersPanel } from '@/features/account/components/members-panel';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FiLogOut, FiSliders } from 'react-icons/fi';
@@ -43,6 +43,7 @@ export function OrganizationScreen({
 }) {
   const auth = useAuth(),
     router = useRouter();
+  const [roleNotice, setRoleNotice] = useState('');
   const busy = auth.operation !== 'idle';
   const title =
     page === 'home'
@@ -72,6 +73,7 @@ export function OrganizationScreen({
         session={auth.session}
         onRetry={() => void auth.restore()}
       />
+      {roleNotice && <p role="status">{roleNotice}</p>}
       {role === undefined ? (
         <p className={styles.notice} role="status">
           {auth.session.status === 'error'
@@ -90,6 +92,11 @@ export function OrganizationScreen({
       ) : page === 'members' && auth.session.status === 'authenticated' ? (
         <MembersPanel
           ownId={auth.session.user.id}
+          onOwnRoleChanged={() =>
+            setRoleNotice(
+              'Sua função foi atualizada. As permissões da nova função já estão em vigor; use Voltar para acessar a central.',
+            )
+          }
           refresh={() => auth.restore(false, true)}
         />
       ) : (

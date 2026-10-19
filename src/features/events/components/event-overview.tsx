@@ -77,7 +77,8 @@ export function EventOverview({
               {c.finish}
             </Button>
             <Button
-              className={`${styles.solid} ${styles.danger}`}
+              variant="danger"
+              className={styles.control}
               disabled={busy}
               onClick={onCancel}
             >
@@ -124,7 +125,12 @@ export function EventOverview({
         </button>
         {event.status === 'ACTIVE' && (
           <Button
-            className={`${styles.solid} ${event.ownPresence === 'CONFIRMED' ? styles.danger : styles.dark}`}
+            variant={event.ownPresence === 'CONFIRMED' ? 'danger' : 'primary'}
+            className={
+              event.ownPresence === 'CONFIRMED'
+                ? styles.control
+                : `${styles.solid} ${styles.dark}`
+            }
             disabled={
               busy || (event.ownPresence === 'CONFIRMED' && event.ownAllocated)
             }

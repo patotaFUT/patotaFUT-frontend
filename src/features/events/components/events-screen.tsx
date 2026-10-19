@@ -879,7 +879,8 @@ export function EventsScreen({
                       </p>
                       <Button
                         disabled={busy}
-                        className={`${styles.solid} ${styles.danger}`}
+                        variant="danger"
+                        className={styles.control}
                         onClick={() =>
                           void action(
                             selected,

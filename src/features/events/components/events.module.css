@@ -215,6 +215,7 @@
   min-width: 0;
 }
 .solid.solid,
+.control,
 .outline {
   display: inline-flex;
   justify-content: center;
@@ -252,14 +253,6 @@
 }
 .dark.dark:hover:not(:disabled) {
   background: var(--color-primary-strong);
-}
-.danger.danger {
-  background: var(--color-error);
-  color: var(--color-surface);
-}
-.danger.danger:hover:not(:disabled) {
-  background: var(--color-error);
-  filter: brightness(0.9);
 }
 .highlight.highlight {
   background: var(--color-highlight);

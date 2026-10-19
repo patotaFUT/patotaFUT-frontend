@@ -380,7 +380,10 @@ export class AuthClient {
         response.status < 300 &&
         body !== undefined
       ) {
-        if (path === '/account/preferences/names')
+        if (
+          path === '/account/preferences/names' ||
+          /^\/account\/members\/[^/]+\/role$/.test(path)
+        )
           this.coordinator.notify('session-changed');
         if (
           [

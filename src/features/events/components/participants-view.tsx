@@ -55,15 +55,16 @@ export function ParticipantsView({
                   active &&
                   (organizer ||
                     (p.allocated && p.participantType === 'USER')) && (
-                    <button
+                    <Button
+                      variant="danger"
+                      iconOnly
                       type="button"
                       disabled={busy}
-                      className={`${styles.iconButton} ${styles.removeButton}`}
                       aria-label={`Cancelar presença de ${p.name}`}
                       onClick={() => onRemove(p.id)}
                     >
                       <FiTrash2 aria-hidden="true" />
-                    </button>
+                    </Button>
                   )}
               </li>
             ))}

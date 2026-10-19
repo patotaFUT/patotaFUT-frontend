@@ -56,7 +56,7 @@ export const privacyContent: LegalContent = {
       id: 'visibilidade',
       title: '3. Quem pode visualizar os dados no aplicativo',
       paragraphs: [
-        'Integrantes autenticados podem visualizar eventos, nomes de participantes, composição dos times e estatísticas disponíveis ao grupo. Administradores e Organizadores têm acesso aos recursos de gestão conforme sua função. A listagem de integrantes, incluindo nome, e-mail e função, é restrita ao Organizador. Os dados de senha, os códigos e os tokens não são apresentados nessas listagens.',
+        'Integrantes autenticados podem visualizar eventos, nomes de participantes, composição dos times e estatísticas disponíveis ao grupo. Administradores e Organizadores têm acesso aos recursos de gestão conforme sua função. A listagem de integrantes é restrita ao Organizador e apresenta nome, sobrenome e função, sem exibir ou transmitir e-mails nessa listagem. Os dados de senha, os códigos e os tokens não são apresentados nessas listagens.',
         'As páginas de Política de Privacidade e Termos de Uso são públicas. Isso não torna públicos os recursos de eventos, estatísticas ou gestão, que exigem autenticação.',
       ],
     },
@@ -171,7 +171,7 @@ export const termsContent: LegalContent = {
       items: [
         'Jogador: consulta eventos e estatísticas, confirma ou cancela sua presença quando permitido e acessa suas Preferências.',
         'Administrador: também administra súmulas e edita uma formação existente, com trocas e alocação manual em vagas. Pode remover uma participação de conta já alocada; a recomposição com reservas é parte dessa remoção. Não faz sorteio inicial ou incorporação geral, não gerencia eventos e não exclui contas de terceiros.',
-        'Organizador: também cria e gerencia eventos, inclui convidados, faz formação, novo sorteio e incorporação, lista integrantes e pode excluir contas sob os bloqueios aplicáveis. A edição de funções de outros integrantes é prevista nas regras do projeto, mas ainda não está disponível na interface ou na API.',
+        'Organizador: também cria e gerencia eventos, inclui convidados, faz formação, novo sorteio e incorporação, lista integrantes por nome e sobrenome, altera suas funções e pode excluir contas sob os bloqueios aplicáveis. A alteração de função exige confirmação e não pode deixar o grupo sem Organizador. Pode alterar a própria função somente se outro Organizador permanecer; as permissões passam a seguir a nova função.',
       ],
     },
     {
