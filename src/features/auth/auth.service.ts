@@ -73,6 +73,11 @@ function failureFor(
   else if (google && status === 401) message = authContent.googleInvalid;
   else if (status === 401) message = authContent.credentialsInvalid;
   else if (status === 400) message = authContent.requestInvalid;
+  if (status === 429) {
+    const seconds = Number(response.headers['retry-after']);
+    if (Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 86400)
+      message = `Muitas requisições. Tente novamente em ${seconds} segundos.`;
+  }
   return {
     kind: status === 401 ? 'authentication' : 'request',
     status,

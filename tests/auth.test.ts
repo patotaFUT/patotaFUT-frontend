@@ -44,6 +44,97 @@ const user = {
   role: 'PLAYER',
 };
 
+test('429: login and protected actions show Retry-After without retry, refresh loops or session-ended notice', async () => {
+  const calls: string[] = [],
+    notices: SessionNotice[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    calls.push(config.url ?? '');
+    return {
+      config,
+      status: config.url === '/auth/csrf' ? 200 : 429,
+      statusText: '',
+      headers: { 'retry-after': '45' },
+      data:
+        config.url === '/auth/csrf'
+          ? { csrfToken: `${'a'.repeat(64)}.${'b'.repeat(64)}` }
+          : { error: 'Muitas requisições.' },
+    };
+  };
+  const coordinator: AuthCoordinator = {
+    exclusive: (action) => action(),
+    notify: (notice) => notices.push(notice),
+    subscribe: () => () => undefined,
+  };
+  const client = new AuthClient(
+    axios.create({ adapter, validateStatus: () => true }),
+    coordinator,
+    '/api',
+  );
+  await assert.rejects(
+    client.login({
+      email: 'player@example.invalid',
+      password: 'isolated-password',
+    }),
+    (error: unknown) =>
+      error instanceof AuthRequestError &&
+      error.failure.status === 429 &&
+      error.failure.message.includes('45 segundos'),
+  );
+  assert.deepEqual(calls, ['/auth/csrf', '/auth/login']);
+  calls.length = 0;
+  assert.equal(
+    (
+      await client.protectedRequest('/events/id/presence', {
+        status: 'CONFIRMED',
+      })
+    ).status,
+    429,
+  );
+  assert.deepEqual(calls, ['/auth/csrf', '/events/id/presence']);
+  assert.deepEqual(notices, []);
+});
+
+test('429 during refresh stops the original operation and session restoration without replay or logout', async () => {
+  const calls: string[] = [],
+    notices: SessionNotice[] = [];
+  const adapter: AxiosAdapter = async (config) => {
+    const path = config.url ?? '';
+    calls.push(path);
+    const csrf = path === '/auth/csrf';
+    return {
+      config,
+      status: csrf ? 200 : path === '/auth/refresh' ? 429 : 401,
+      statusText: '',
+      headers: { 'retry-after': '60' },
+      data: csrf
+        ? { csrfToken: `${'a'.repeat(64)}.${'b'.repeat(64)}` }
+        : { error: 'Muitas requisições.' },
+    };
+  };
+  const coordinator: AuthCoordinator = {
+    exclusive: (action) => action(),
+    notify: (notice) => notices.push(notice),
+    subscribe: () => () => undefined,
+  };
+  const client = new AuthClient(
+    axios.create({ adapter, validateStatus: () => true }),
+    coordinator,
+    '/api',
+  );
+  await assert.rejects(
+    client.protectedRequest('/events'),
+    (error: unknown) =>
+      error instanceof AuthRequestError && error.failure.status === 429,
+  );
+  assert.deepEqual(calls, ['/events', '/auth/csrf', '/auth/refresh']);
+  calls.length = 0;
+  const restored = await client.restore();
+  assert.equal(restored.status, 'error');
+  if (restored.status === 'error') assert.equal(restored.error.status, 429);
+  assert.deepEqual(calls, ['/auth/me', '/auth/csrf', '/auth/refresh']);
+  assert.deepEqual(notices, []);
+});
+
 test('RN07/RN57: role change notifies other sessions and /me restores the new role without replacing credentials; conflicts never replay', async () => {
   let role = 'PLAYER',
     status = 200;

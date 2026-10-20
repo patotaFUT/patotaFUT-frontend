@@ -265,3 +265,163 @@ test('Errors, redirects, HEAD and 204: safe responses, no external forwarding an
   ])
     assert.equal(head.headers.get(header), null);
 });
+import { createHmac } from 'node:crypto';
+import { proxyOriginHeaders } from '../src/lib/http/proxy-origin';
+
+test('Origin: only Vercel metadata is signed; spoofed forwarding/signature headers are replaced; missing metadata fails closed', async () => {
+  const secret = 'isolated-proxy-fixture-'.repeat(3);
+  const environment = {
+    VERCEL: '1',
+    NODE_ENV: 'production',
+    API_PROXY_SECRET: secret,
+  };
+  const request = new Request(frontend + '/api/auth/login?x=1', {
+    method: 'POST',
+    body: '{}',
+    headers: {
+      'x-vercel-forwarded-for': '198.51.100.23',
+      'x-forwarded-for': '203.0.113.1',
+      'x-patotafut-ip': '203.0.113.2',
+      'x-patotafut-signature': 'forged',
+      'content-type': 'application/json',
+    },
+  });
+  const target = new URL(backend + '/auth/login?x=1');
+  const signed = proxyOriginHeaders(
+    request,
+    target,
+    environment,
+    1792454400000,
+  );
+  assert.equal(signed['x-patotafut-ip'], '198.51.100.23');
+  assert.equal(
+    signed['x-patotafut-signature'],
+    createHmac('sha256', secret)
+      .update(
+        JSON.stringify([
+          'patotafut-origin-v1',
+          '1792454400000',
+          'POST',
+          '/auth/login?x=1',
+          '198.51.100.23',
+        ]),
+      )
+      .digest('hex'),
+  );
+  for (const ip of [
+    '',
+    'spoofed',
+    '198.51.100.23:1234',
+    '1.2.3.4, 5.6.7.8',
+    'fe80::1%eth0',
+  ]) {
+    const invalid = new Request(frontend, {
+      headers: { 'x-vercel-forwarded-for': ip },
+    });
+    assert.throws(() => proxyOriginHeaders(invalid, target, environment));
+  }
+  assert.throws(() =>
+    proxyOriginHeaders(new Request(frontend), target, environment),
+  );
+  assert.throws(() =>
+    proxyOriginHeaders(request, target, {
+      ...environment,
+      API_PROXY_SECRET: '',
+    }),
+  );
+  assert.throws(() =>
+    proxyOriginHeaders(request, target, {
+      NODE_ENV: 'production',
+      API_PROXY_SECRET: secret,
+    }),
+  );
+  assert.deepEqual(
+    proxyOriginHeaders(request, target, { NODE_ENV: 'development' }),
+    {},
+  );
+  assert.deepEqual(
+    proxyOriginHeaders(request, new URL('http://localhost:8080/auth/login'), {
+      NODE_ENV: 'production',
+    }),
+    {},
+  );
+  assert.equal(
+    proxyOriginHeaders(request, new URL('http://127.0.0.1:8080/auth/login'), {
+      NODE_ENV: 'production',
+      API_PROXY_SECRET: secret,
+    })['x-patotafut-ip'],
+    '127.0.0.1',
+  );
+  assert.equal(
+    proxyOriginHeaders(request, target, {
+      NODE_ENV: 'development',
+      API_PROXY_SECRET: secret,
+    })['x-patotafut-ip'],
+    '127.0.0.1',
+  );
+  const previous = {
+    VERCEL: process.env.VERCEL,
+    NODE_ENV: process.env.NODE_ENV,
+    API_PROXY_SECRET: process.env.API_PROXY_SECRET,
+  };
+  try {
+    Object.assign(process.env, environment);
+    let calls = 0;
+    const response = await forwardApi(
+      request,
+      ['auth', 'login'],
+      backend,
+      async (_url, init) => {
+        calls++;
+        const headers = new Headers(init?.headers);
+        assert.equal(headers.get('x-forwarded-for'), null);
+        assert.equal(headers.get('x-vercel-forwarded-for'), null);
+        assert.equal(headers.get('x-patotafut-ip'), '198.51.100.23');
+        assert.notEqual(headers.get('x-patotafut-signature'), 'forged');
+        assert.equal(
+          headers.get('x-patotafut-signature'),
+          createHmac('sha256', secret)
+            .update(
+              JSON.stringify([
+                'patotafut-origin-v1',
+                headers.get('x-patotafut-time'),
+                'POST',
+                '/auth/login?x=1',
+                '198.51.100.23',
+              ]),
+            )
+            .digest('hex'),
+        );
+        assert.ok(![...headers.values()].includes(secret));
+        return Response.json(
+          { error: 'Muitas requisições.', retryAfter: 60 },
+          {
+            status: 429,
+            headers: { 'Retry-After': '60', RateLimit: '"login";r=0;t=60' },
+          },
+        );
+      },
+    );
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get('retry-after'), '60');
+    assert.match(response.headers.get('ratelimit') ?? '', /login/);
+    assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+    assert.equal(calls, 1);
+    const unavailable = await forwardApi(
+      new Request(frontend),
+      ['auth', 'csrf'],
+      backend,
+      async () => {
+        calls++;
+        return Response.json({});
+      },
+    );
+    assert.equal(unavailable.status, 503);
+    assert.equal(calls, 1);
+  } finally {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
+});

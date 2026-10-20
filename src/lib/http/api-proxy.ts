@@ -1,6 +1,7 @@
 // Imported by the server Route Handler only. Never import into Client Components.
 // The browser knows /api; only the Next.js server reads the backend origin.
 import { proxyTimeout } from '../../features/auth/access-timing';
+import { proxyOriginHeaders } from './proxy-origin';
 
 const privateCacheHeaders = {
   'Cache-Control': 'private, no-store, max-age=0',
@@ -95,8 +96,19 @@ export async function forwardApi(
     const value = request.headers.get(name);
     if (value !== null) headers.set(name, value);
   }
-  // Do not invent Origin or trust client-supplied X-Forwarded-* / Host headers.
-  // Client IP attribution requires verification of the actual Vercel/Render chain.
+  // The allowlist strips client forwarding and signature headers. Only platform
+  // metadata is signed, and Origin/CSRF/Cookie keep their existing semantics.
+  try {
+    for (const [name, value] of Object.entries(
+      proxyOriginHeaders(request, target),
+    ))
+      headers.set(name, value);
+  } catch {
+    return failure(
+      503,
+      'O serviço está indisponível. Tente novamente em instantes.',
+    );
+  }
   try {
     const body = ['GET', 'HEAD'].includes(request.method)
       ? undefined

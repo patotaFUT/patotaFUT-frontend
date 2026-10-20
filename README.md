@@ -131,11 +131,12 @@ respostas privadas desabilitam cache no navegador e na CDN. URL inválida ou
 ausente retorna 503 seguro; falha de transporte retorna 502/504, sem detalhes
 internos. O cliente não pode escolher host ou protocolo de destino.
 
-`HTTP_TRUST_PROXY_HOPS` não foi alterado. Sem verificar os cabeçalhos de uma
-requisição real Vercel → Render, não é possível determinar um número seguro de
-saltos. O proxy não repassa X-Forwarded-\* fornecidos pelo cliente. A atribuição
-do IP e o limite de login por IP podem agrupar usuários pelo IP de saída do proxy;
-valide essa cadeia no ambiente hospedado antes de mudar a confiança ou os limites.
+Atualização de 20/10/2026: o proxy usa o IP fornecido pela Vercel e assina a origem
+para o Express. Configure `API_PROXY_SECRET` somente no servidor, com o mesmo
+segredo exclusivo no Next e na API; nunca use prefixo `NEXT_PUBLIC`. Headers do
+cliente são descartados. Express mantém `trust proxy=false`; remova
+`HTTP_TRUST_PROXY_HOPS`. Limites autenticados usam a conta validada, com proteção
+complementar de origem. Veja [configuração, valores e limitações](../docs/implementacao-origem-limites.md).
 
 As chamadas atuais de autenticação/eventos são feitas por Client Components e
 usam o Axios de navegador com `/api`. O Route Handler usa URL absoluta no servidor.
